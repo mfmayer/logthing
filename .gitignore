@@ -1,3 +1,5 @@
+# vscode folder and related files
+.vscode/
 # Binaries for programs and plugins
 *.exe
 *.exe~
