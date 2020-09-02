@@ -14,7 +14,45 @@ The following log writers are part of the logwriter package:
 Before trying the code, ensure that relevant environment variables are set (see Configuraiton).
 
 ```go
-// TODO...
+package main
+
+import (
+	"github.com/mfmayer/logthing"
+	"github.com/mfmayer/logthing/logwriter"
+)
+
+func main() {
+	// Init the dispatcher with an Azure Monitoro writer
+	if err := logthing.InitDispatcher([]logwriter.LogWriter{
+		logwriter.NewAzureMonitorWriter(),
+	}); err != nil {
+		logthing.Error.Printf("Error init dispatcher: %v", err)
+	}
+
+	logMsg := logthing.NewLogMsg("<some_type>")         // Create & log a message with a trackingID, a foo & bar property and a info message
+	logMsg.SetTrackingID("<some_tracking_id>")          // Add a tracking id
+	logMsg.SetProperty("foo", 12345)                    // set a property
+	logMsg.SetProperty("bar", []int{5, 6, 7, 8})        // set another property
+	logMsg.Infof("Hello %v", []string{"World", "Moon"}) // set an info message
+	logthing.LogMsg(logMsg)                             // log the message
+
+	// The calls can be also lined up as in this additional example:
+	logthing.NewLogMsg("<another_type>"). // create the message
+						Infof("Hello %v", []string{"Mom", "Dad"}).                                       // add an info message
+						SetProperty("windStringified", logthing.SProp{"speed": 10, "directions": 25.5}). // add a wind property (stringified)
+						SetProperty("wind", map[string]interface{}{"speed": 10, "directions": 25.5}).    // add the same wind property (non-stringified)
+						SetProperty("rain", 10).                                                         // add arain property
+						Warningf("The weather is %v", []string{"rainy", "stormy"}).                      // and add a warning message (the severity level is automatically adjusted to the lowest level)
+						Log()                                                                               // log the message
+
+	logthing.Close()
+}
+
+/* Outputs:
+INFO:  2020/09/02 20:47:14 logthing_test.go:23: logthing_test.go:22: Hello [World Moon] ([foo:12345 trackingID:<some_tracking_id>])
+WARN:  2020/09/02 20:47:14 logthing_test.go:32: logthing_test.go:27: Hello [Mom Dad]
+                           logthing_test.go:31: The weather is [rainy stormy]
+*/
 ```
 
 ### Configuration

@@ -20,7 +20,7 @@ import (
 // Currently dispatcher is created by the logthing module and can be configuresd via environment variables.
 // Therefore only a single one is supported and it's unclear whether it makes sense to have multiple dispatchers.
 type logDispatcher struct {
-	logMessageCh chan *logMessageStruct
+	logMessageCh chan map[string]interface{}
 	logWriters   []logwriter.LogWriter
 	done         chan bool
 }
@@ -28,7 +28,7 @@ type logDispatcher struct {
 // NewLogDispatcher returns a new LogDispatcher
 func newLogDispatcher(logWriters []logwriter.LogWriter) (ld *logDispatcher, err error) {
 	ld = &logDispatcher{
-		logMessageCh: make(chan *logMessageStruct, 4096),
+		logMessageCh: make(chan map[string]interface{}, 4096),
 		done:         make(chan bool),
 	}
 	var lwInitErrors []error
@@ -46,7 +46,7 @@ func newLogDispatcher(logWriters []logwriter.LogWriter) (ld *logDispatcher, err 
 
 	go func(ld *logDispatcher) {
 		ticker := time.NewTicker(5 * time.Second)
-		var logMessages []*logMessageStruct
+		var logMessages []map[string]interface{}
 		for {
 			select {
 			case <-ticker.C:
@@ -86,21 +86,14 @@ func (ld *logDispatcher) close() {
 }
 
 // writeLogMessages pre-marshals the log message and forwards it to all registered writers
-func (ld *logDispatcher) writeLogMessages(logMessages []*logMessageStruct) {
+func (ld *logDispatcher) writeLogMessages(logMessages []map[string]interface{}) {
 	if len(logMessages) <= 0 {
 		return
 	}
 	rawLogMessages := make([]json.RawMessage, len(logMessages))
-	lma := []map[string]interface{}{}
 	j := 0
 	for _, logMessage := range logMessages {
-		logMessage.properties["type"] = logMessage.logMessageType
-		logMessage.properties["timestamp"] = UTCTime(logMessage.timestamp.UTC())
-		logMessage.properties["severity"] = logMessage.severity
-		logMessage.properties["trackingID"] = logMessage.trackingID
-		logMessage.properties["output"] = logMessage.output
-		lma = append(lma, logMessage.properties)
-		if rawLogMessage, err := json.Marshal(logMessage.properties); err != nil {
+		if rawLogMessage, err := json.Marshal(logMessage); err != nil {
 			Error.Printf("Error while marshalling log message: %v", err)
 		} else {
 			rawLogMessages[j] = rawLogMessage
@@ -141,6 +134,21 @@ func (ld *logDispatcher) log(calldepth int, logMessage LogMessage) error {
 		}
 	}
 
+	if time.Time(msg.timestamp).IsZero() {
+		msg.timestamp = time.Now()
+	}
+
+	if msg.properties == nil {
+		msg.properties = map[string]interface{}{}
+	}
+	msg.properties["type"] = msg.logMessageType
+	msg.properties["timestamp"] = UTCTime(msg.timestamp.UTC())
+	msg.properties["severity"] = msg.severity
+	if msg.trackingID != "" {
+		msg.properties["trackingID"] = msg.trackingID
+	}
+	msg.properties["output"] = msg.output
+
 	// Print logMessage Output using appropriate logger
 	if len(msg.output) > 0 {
 		var lg *log.Logger
@@ -171,12 +179,8 @@ func (ld *logDispatcher) log(calldepth int, logMessage LogMessage) error {
 		}
 	}
 
-	if time.Time(msg.timestamp).IsZero() {
-		msg.timestamp = time.Now()
-	}
-
 	select {
-	case ld.logMessageCh <- msg:
+	case ld.logMessageCh <- msg.properties:
 	default:
 		return ErrChannelFull
 	}

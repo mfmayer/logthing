@@ -17,61 +17,37 @@ type logMessageStruct struct {
 	properties     map[string]interface{}
 }
 
-// LogMessage is the interface to log structured information and output log messages
+// LogMessage is the interface to build up a log message with structured data and formatted text.
+// Structured data and formatted text will be dispatched to log writers. The formatted text will be also printed to stderr and stdout.
 type LogMessage interface {
-	// SetSeverity sets log message severity level (only if given severity level is lower than current)
-	SetSeverity(severity Severity) LogMessage
-	// Severity returns log message severity level
-	Severity() Severity
-	// SetTrackingID sets log message tracking ID
-	SetTrackingID(trackingID string) LogMessage
-	// TrackingID returns log message tracking ID
-	TrackingID() string
-	// SetTimestamp sets log message timestamp
-	SetTimestamp(time time.Time) LogMessage
-	// Timestamp returns log message timestamp
-	Timestamp() time.Time
-	// SetProperty allows to add any structured information to the log message that can be marshalled to JSON
-	// NOTE: "timestamp", "type", "severtiy", "trackingID", "output" are reserved keys and will be overwritten eventually
-	SetProperty(key string, value interface{}) LogMessage
-	// Property returns value with given key. If the value isn't found, ok will be false
-	Property(key string) (value interface{}, ok bool)
-	// Trace appends output data to be printed and implicitly sets appropriate severity level
-	Trace(output ...interface{}) LogMessage
-	// Tracef appends output data to be printed and implicitly sets appropriate severity level
-	Tracef(format string, v ...interface{}) LogMessage
-	// Info appends output data to be printed and implicitly sets appropriate severity level
-	Info(output ...interface{}) LogMessage
-	// Infof appends output data to be printed and implicitly sets appropriate severity level
-	Infof(format string, v ...interface{}) LogMessage
-	// Notice appends output data to be printed and implicitly sets appropriate severity level
-	Notice(output ...interface{}) LogMessage
-	// Noticef appends output data to be printed and implicitly sets appropriate severity level
-	Noticef(format string, v ...interface{}) LogMessage
-	// Warning appends output data to be printed and implicitly sets appropriate severity level
-	Warning(output ...interface{}) LogMessage
-	// Warningf appends output data to be printed and implicitly sets appropriate severity level
-	Warningf(format string, v ...interface{}) LogMessage
-	// Error appends output data to be printed and implicitly sets appropriate severity level
-	Error(output ...interface{}) LogMessage
-	// Errorf appends output data to be printed and implicitly sets appropriate severity level
-	Errorf(format string, v ...interface{}) LogMessage
-	// Critical appends output data to be printed and implicitly sets appropriate severity level
-	Critical(output ...interface{}) LogMessage
-	// Criticalf appends output data to be printed and implicitly sets appropriate severity level
-	Criticalf(format string, v ...interface{}) LogMessage
-	// Alert appends output data to be printed and implicitly sets appropriate severity level
-	Alert(output ...interface{}) LogMessage
-	// Alertf appends output data to be printed and implicitly sets appropriate severity level
-	Alertf(format string, v ...interface{}) LogMessage
-	// Emergency appends output data to be printed and implicitly sets appropriate severity level
-	Emergency(output ...interface{}) LogMessage
-	// Emergencyf appends output data to be printed and implicitly sets appropriate severity level
-	Emergencyf(format string, v ...interface{}) LogMessage
-	// AppendOutput appends information to be printed and sets given severity level
-	AppendOutput(severity Severity, output ...interface{}) LogMessage
-	// Log is a convenience function for LogMsg(LogMessage)
-	Log() error
+	SetType(msgType string) LogMessage                                // sets log message type
+	Type() string                                                     // returns log message type
+	SetSeverity(severity Severity) LogMessage                         // sets log message severity level (only if given severity level is lower than current)
+	Severity() Severity                                               // returns log message severity level
+	SetTrackingID(trackingID string) LogMessage                       // sets log message tracking ID
+	TrackingID() string                                               // returns log message tracking ID
+	SetTimestamp(time time.Time) LogMessage                           // sets log message timestamp
+	Timestamp() time.Time                                             // returns log message timestamp
+	SetProperty(key string, value interface{}) LogMessage             // sets property value for given key. NOTE: "timestamp", "type", "severtiy", "trackingID" and "output" are reserved keys. They do have separate set functions.
+	Property(key string) (value interface{}, ok bool)                 // returns value with given key. If the value isn't found, ok will be false.
+	Trace(output ...interface{}) LogMessage                           // appends output data to be printed and implicitly sets appropriate severity level
+	Tracef(format string, v ...interface{}) LogMessage                // appends output data to be printed and implicitly sets appropriate severity level
+	Info(output ...interface{}) LogMessage                            // appends output data to be printed and implicitly sets appropriate severity level
+	Infof(format string, v ...interface{}) LogMessage                 // appends output data to be printed and implicitly sets appropriate severity level
+	Notice(output ...interface{}) LogMessage                          // appends output data to be printed and implicitly sets appropriate severity level
+	Noticef(format string, v ...interface{}) LogMessage               // appends output data to be printed and implicitly sets appropriate severity level
+	Warning(output ...interface{}) LogMessage                         // appends output data to be printed and implicitly sets appropriate severity level
+	Warningf(format string, v ...interface{}) LogMessage              // appends output data to be printed and implicitly sets appropriate severity level
+	Error(output ...interface{}) LogMessage                           // appends output data to be printed and implicitly sets appropriate severity level
+	Errorf(format string, v ...interface{}) LogMessage                // appends output data to be printed and implicitly sets appropriate severity level
+	Critical(output ...interface{}) LogMessage                        // appends output data to be printed and implicitly sets appropriate severity level
+	Criticalf(format string, v ...interface{}) LogMessage             // appends output data to be printed and implicitly sets appropriate severity level
+	Alert(output ...interface{}) LogMessage                           // appends output data to be printed and implicitly sets appropriate severity level
+	Alertf(format string, v ...interface{}) LogMessage                // appends output data to be printed and implicitly sets appropriate severity level
+	Emergency(output ...interface{}) LogMessage                       // appends output data to be printed and implicitly sets appropriate severity level
+	Emergencyf(format string, v ...interface{}) LogMessage            // appends output data to be printed and implicitly sets appropriate severity level
+	AppendOutput(severity Severity, output ...interface{}) LogMessage // appends information to be printed and sets given severity level
+	Log() error                                                       // is a convenience function for LogMsg(LogMessage)
 }
 
 // NewLogMsg creates new log message and sets the given type
@@ -86,6 +62,22 @@ func NewLogMsg(messageType string) LogMessage {
 // Log is a convenience function for LogMsg(LogMessage)
 func (lm *logMessageStruct) Log() error {
 	return logMsgWithCalldev(2, lm)
+}
+
+// SetSeverity sets log message severity level (only if given severity level is lower than current)
+func (lm *logMessageStruct) SetType(msgType string) LogMessage {
+	if lm != nil {
+		lm.logMessageType = msgType
+	}
+	return lm
+}
+
+// Severity returns log message severity level
+func (lm *logMessageStruct) Type() string {
+	if lm == nil {
+		return lm.logMessageType
+	}
+	return ""
 }
 
 // SetSeverity sets log message severity level (only if given severity level is lower than current)
