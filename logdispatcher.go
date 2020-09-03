@@ -102,7 +102,7 @@ func (ld *logDispatcher) writeLogMessages(logMessages []*logMsg) {
 	timestamps := make([]time.Time, len(logMessages))
 	j := 0
 	for _, logMessage := range logMessages {
-		if rawLogMessage, err := json.Marshal(logMessage); err != nil {
+		if rawLogMessage, err := json.Marshal(logMessage.Properties()); err != nil {
 			Error.Printf("Error while marshalling log message: %v", err)
 		} else {
 			rawLogMessages[j] = rawLogMessage
