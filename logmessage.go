@@ -57,6 +57,7 @@ type LogMsg interface {
 	SetSProperty(key string, value interface{}) LogMsg            // like SetProperty but stringifies the value will be stringified
 	Property(key string) (value interface{}, ok bool)             // returns value with given key. If the value isn't found, ok will be false.
 	Properties() map[string]interface{}                           // returns property map
+	Output() []string                                             // returns output data
 	Trace(output ...interface{}) LogMsg                           // appends output data to be printed and implicitly sets appropriate severity level
 	Tracef(format string, v ...interface{}) LogMsg                // appends output data to be printed and implicitly sets appropriate severity level
 	Info(output ...interface{}) LogMsg                            // appends output data to be printed and implicitly sets appropriate severity level
@@ -199,6 +200,7 @@ func (lm *logMsg) Property(key string) (value interface{}, ok bool) {
 	return
 }
 
+// Properties returns properties
 func (lm *logMsg) Properties() map[string]interface{} {
 	if lm != nil {
 		lmp, ok := lm.properties.(map[string]interface{})
@@ -207,6 +209,13 @@ func (lm *logMsg) Properties() map[string]interface{} {
 			lm.properties = lmp
 		}
 		return lmp
+	}
+	return nil
+}
+
+func (lm *logMsg) Output() []string {
+	if lm != nil {
+		return lm.output
 	}
 	return nil
 }
