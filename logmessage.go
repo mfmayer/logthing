@@ -55,7 +55,7 @@ type LogMsg interface {
 	Timestamp() time.Time                                         // returns log message timestamp
 	SetProperty(key string, value interface{}) LogMsg             // sets property value for given key. NOTE: "timestamp", "type", "severtiy", "trackingID" and "output" are reserved keys. They do have separate set functions.
 	SetSProperty(key string, value interface{}) LogMsg            // like SetProperty but stringifies the value will be stringified
-	Property(key string) (value interface{}, ok bool)             // returns value with given key. If the value isn't found, ok will be false.
+	Property(key string) interface{}                              // returns value with given key. If the value isn't found, ok will be false.
 	Properties() map[string]interface{}                           // returns property map
 	Output() []string                                             // returns output data
 	Trace(output ...interface{}) LogMsg                           // appends output data to be printed and implicitly sets appropriate severity level
@@ -191,13 +191,15 @@ func (lm *logMsg) SetSProperty(key string, value interface{}) LogMsg {
 	return lm
 }
 
-// Property returns value with given key. If the value isn't found, ok will be false
-func (lm *logMsg) Property(key string) (value interface{}, ok bool) {
+// Property returns value with given key. If the value isn't found, nil is returned
+func (lm *logMsg) Property(key string) interface{} {
 	lmp := lm.Properties()
 	if lmp != nil {
-		value, ok = lmp[key]
+		if value, ok := lmp[key]; ok {
+			return value
+		}
 	}
-	return
+	return nil
 }
 
 // Properties returns properties

@@ -135,7 +135,7 @@ func printLogMsg(calldepth int, msg *logMsg) {
 		}
 		outputProperties := []string{}
 		for outputProperty := range config.printOutputProperties {
-			if outputPropertyValue, ok := msg.Property(outputProperty); ok {
+			if outputPropertyValue := msg.Property(outputProperty); outputPropertyValue != nil {
 				v := fmt.Sprintf("%v:%v", outputProperty, outputPropertyValue)
 				if len(v) > 0 {
 					outputProperties = append(outputProperties, v)
