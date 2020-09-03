@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 	"time"
 
@@ -20,7 +21,7 @@ import (
 // Currently dispatcher is created by the logthing module and can be configuresd via environment variables.
 // Therefore only a single one is supported and it's unclear whether it makes sense to have multiple dispatchers.
 type logDispatcher struct {
-	logMessageCh chan map[string]interface{}
+	logMessageCh chan *logMsg
 	logWriters   []logwriter.LogWriter
 	done         chan bool
 }
@@ -28,7 +29,7 @@ type logDispatcher struct {
 // NewLogDispatcher returns a new LogDispatcher
 func newLogDispatcher(logWriters []logwriter.LogWriter) (ld *logDispatcher, err error) {
 	ld = &logDispatcher{
-		logMessageCh: make(chan map[string]interface{}, 4096),
+		logMessageCh: make(chan *logMsg, 4096),
 		done:         make(chan bool),
 	}
 	var lwInitErrors []error
@@ -46,11 +47,10 @@ func newLogDispatcher(logWriters []logwriter.LogWriter) (ld *logDispatcher, err 
 
 	go func(ld *logDispatcher) {
 		ticker := time.NewTicker(5 * time.Second)
-		var logMessages []map[string]interface{}
+		var logMessages []*logMsg
 		for {
 			select {
 			case <-ticker.C:
-				// logger.logElasticSearch(logMessages)
 				ld.writeLogMessages(logMessages)
 				logMessages = nil
 			case msg, more := <-ld.logMessageCh:
@@ -86,24 +86,35 @@ func (ld *logDispatcher) close() {
 }
 
 // writeLogMessages pre-marshals the log message and forwards it to all registered writers
-func (ld *logDispatcher) writeLogMessages(logMessages []map[string]interface{}) {
+func (ld *logDispatcher) writeLogMessages(logMessages []*logMsg) {
 	if len(logMessages) <= 0 {
 		return
 	}
+
+	sort.Slice(logMessages, func(i, j int) bool {
+		if time.Time(logMessages[i].timestamp).Before(time.Time(logMessages[j].timestamp)) {
+			return true
+		}
+		return false
+	})
+
 	rawLogMessages := make([]json.RawMessage, len(logMessages))
+	timestamps := make([]time.Time, len(logMessages))
 	j := 0
 	for _, logMessage := range logMessages {
 		if rawLogMessage, err := json.Marshal(logMessage); err != nil {
 			Error.Printf("Error while marshalling log message: %v", err)
 		} else {
 			rawLogMessages[j] = rawLogMessage
+			timestamps[j] = logMessage.Timestamp()
 			j++
 		}
 	}
 	rawLogMessages = rawLogMessages[:j]
+	timestamps = timestamps[:j]
 	for i, lw := range ld.logWriters {
 		if lw != nil {
-			err := lw.WriteLogMessages(rawLogMessages)
+			err := lw.WriteLogMessages(rawLogMessages, timestamps)
 			if err != nil {
 				Error.Printf("Error while writing log message: %v", err)
 				if errors.Is(err, logwriter.ErrWriterDisable) { // if writer returns ErrWriterStop, it is closed and removed from registered writers
@@ -115,50 +126,17 @@ func (ld *logDispatcher) writeLogMessages(logMessages []map[string]interface{}) 
 	}
 }
 
-// log formats the log message and queues it to be written
-func (ld *logDispatcher) log(calldepth int, logMessage LogMessage) error {
-	msg, ok := logMessage.(*logMessageStruct)
-	if !ok {
-		return ErrWrongMessageType
-	}
-
-	// Set at least trace severity
-	msg.SetSeverity(SeverityTrace)
-
-	// Drop message if severity is greater than configured logSeverity and according logType is not explicitely defined
-	if msg.severity > config.logMaxSeverity {
-		if len(msg.logMessageType) > 0 {
-			if _, found := config.whitelistLogTypes[msg.logMessageType]; !found {
-				return ErrSeverityAboveMax
-			}
-		}
-	}
-
-	if time.Time(msg.timestamp).IsZero() {
-		msg.timestamp = time.Now()
-	}
-
-	if msg.properties == nil {
-		msg.properties = map[string]interface{}{}
-	}
-	msg.properties["type"] = msg.logMessageType
-	msg.properties["timestamp"] = UTCTime(msg.timestamp.UTC())
-	msg.properties["severity"] = msg.severity
-	if msg.trackingID != "" {
-		msg.properties["trackingID"] = msg.trackingID
-	}
-	msg.properties["output"] = msg.output
-
-	// Print logMessage Output using appropriate logger
-	if len(msg.output) > 0 {
+// printLogMsg formats and prints the log message
+func printLogMsg(calldepth int, msg *logMsg) {
+	if len(msg.output) > 0 && config.printSeverity(msg.Severity()) {
 		var lg *log.Logger
 		if msg.severity < SeverityNotApplied {
 			lg = *loggers[msg.severity]
 		}
 		outputProperties := []string{}
 		for outputProperty := range config.printOutputProperties {
-			if opv, ok := msg.properties[outputProperty]; ok {
-				v := fmt.Sprintf("%v:%v", outputProperty, opv)
+			if outputPropertyValue, ok := msg.Property(outputProperty); ok {
+				v := fmt.Sprintf("%v:%v", outputProperty, outputPropertyValue)
 				if len(v) > 0 {
 					outputProperties = append(outputProperties, v)
 				}
@@ -178,9 +156,48 @@ func (ld *logDispatcher) log(calldepth int, logMessage LogMessage) error {
 			lg.Output(calldepth, logString)
 		}
 	}
+}
+
+// log prints the log message and queues it to be written
+func (ld *logDispatcher) log(calldepth int, logMessage LogMsg) error {
+	msg, ok := logMessage.(*logMsg)
+	if !ok {
+		return ErrWrongMessageType
+	}
+
+	// Set at least trace severity
+	msg.SetSeverity(SeverityTrace)
+
+	// Drop message if severity is greater than configured logSeverity and according logType is not explicitely defined
+	if msg.severity > config.logMaxSeverity {
+		if len(msg.logMessageType) > 0 {
+			if _, found := config.whitelistLogTypes[msg.logMessageType]; !found {
+				return ErrSeverityAboveMax
+			}
+		}
+	}
+
+	// Ensure that timestamp is set
+	if time.Time(msg.timestamp).IsZero() {
+		msg.timestamp = UTCTime(time.Now())
+	}
+
+	// Ensure that msg properties are complete, because only the properties will be marshalled and logged
+	msg.SetProperty("type", msg.logMessageType)
+	msg.SetProperty("timestamp", msg.timestamp)
+	msg.SetProperty("severity", msg.severity)
+	if msg.trackingID != "" {
+		msg.SetProperty("trackingID", msg.trackingID)
+	}
+
+	// Print msg to stdout/stderr
+	printLogMsg(calldepth+1, msg)
+
+	// Also make msg output part of its properties
+	msg.SetProperty("output", msg.output)
 
 	select {
-	case ld.logMessageCh <- msg.properties:
+	case ld.logMessageCh <- msg:
 	default:
 		return ErrChannelFull
 	}

@@ -105,12 +105,12 @@ func (am *azureMonitor) Init() error {
 func (am *azureMonitor) Close() {
 }
 
-func (am *azureMonitor) WriteLogMessages(rawLogMessages []json.RawMessage) error {
+func (am *azureMonitor) WriteLogMessages(logMessages []json.RawMessage, timestamps []time.Time) error {
 	if len(am.azKey) == 0 || len(am.azWorkspaceID) == 0 {
 		return ErrWriterDisable
 	}
 
-	postData, _ := json.Marshal(rawLogMessages)
+	postData, _ := json.Marshal(logMessages)
 	postDataLength := len(postData)
 
 	signature, msDate, err := am.azCreateSignatureString(postDataLength)

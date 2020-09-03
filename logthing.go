@@ -21,14 +21,11 @@
 package logthing
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/mfmayer/logthing/logwriter"
@@ -43,21 +40,6 @@ func (t UTCTime) MarshalJSON() ([]byte, error) {
 	return []byte(timestamp), nil
 }
 
-// SProp stringifies the sutrucuterd property data before dispatching it to the log writers.
-type SProp map[string]interface{}
-
-// MarshalJSON creates stringified version of
-func (sm SProp) MarshalJSON() (ret []byte, err error) {
-	ret, err = json.Marshal(map[string]interface{}(sm))
-	if err == nil {
-		ret, err = json.Marshal(string(ret))
-	}
-	return ret, err
-}
-
-// Severity to declare log message severities
-type Severity uint
-
 var (
 	ld            *logDispatcher // default log dispatcher
 	loggers       = []**log.Logger{&Emergency, &Alert, &Critical, &Error, &Warning, &Notice, &Info, &Trace}
@@ -65,61 +47,34 @@ var (
 	severityNames = []string{"Emergency", "Alert", "Critical", "Error", "Warnin", "Notice", "Info", "Trace"}
 )
 
-// Trace logger to print Trace messages to stdout
-var Trace *log.Logger
+var (
+	// Trace logger to print Trace messages to stdout
+	Trace *log.Logger
+	// Info logger to print Info messages to stdout
+	Info *log.Logger
+	// Notice logger to print Notice messages to stdout
+	Notice *log.Logger
+	// Warning logger to print Warning messages to stdout
+	Warning *log.Logger
+	// Error logger to print Error messages to stderr
+	Error *log.Logger
+	// Critical logger to print Critical messages to stderr
+	Critical *log.Logger
+	// Alert logger to print Alert messages to stderr
+	Alert *log.Logger
+	// Emergency logger to print Emergency messages to stderr
+	Emergency *log.Logger
+)
 
-// Info logger to print Info messages to stdout
-var Info *log.Logger
-
-// Notice logger to print Notice messages to stdout
-var Notice *log.Logger
-
-// Warning logger to print Warning messages to stdout
-var Warning *log.Logger
-
-// Error logger to print Error messages to stderr
-var Error *log.Logger
-
-// Critical logger to print Critical messages to stderr
-var Critical *log.Logger
-
-// Alert logger to print Alert messages to stderr
-var Alert *log.Logger
-
-// Emergency logger to print Emergency messages to stderr
-var Emergency *log.Logger
-
-// ErrNotInitialized is returned when the dispatcher hasn't been initialized
-var ErrNotInitialized error = errors.New("Dispatcher not initialized")
-
-// ErrSeverityAboveMax is returned when the message's severity is above the max severity level. See LOGTHING_LOG_MAX_SEVERITY
-var ErrSeverityAboveMax error = errors.New("LogMessage severity level above LOGTHING_LOG_MAX_SEVERITY")
-
-// ErrWrongMessageType is returned whe the log message is of wrong type. Ensure that LogMessage has been created by calling NewLogMsg()
-var ErrWrongMessageType error = errors.New("LogMessage is of wrong type")
-
-// ErrChannelFull is returned when there is no empty space in the LogMessage queue
-var ErrChannelFull error = errors.New("Channel full")
-
-const (
-	// SeverityNotApplied Severity level for tracing log entries
-	SeverityNotApplied Severity = 8
-	// SeverityTrace Severity level for tracing log entries
-	SeverityTrace Severity = 7
-	// SeverityInfo Severity level for information log entries
-	SeverityInfo Severity = 6
-	// SeverityNotice Severity level for notice log entries
-	SeverityNotice Severity = 5
-	// SeverityWarning Severity level for warning log entries
-	SeverityWarning Severity = 4
-	// SeverityError Severity level for error log entries
-	SeverityError Severity = 3
-	// SeverityCritical Severity level for critical log entries
-	SeverityCritical Severity = 2
-	// SeverityAlert Severity level for alert log entries
-	SeverityAlert Severity = 1
-	// SeverityEmergency Severity level for emergency log entries
-	SeverityEmergency Severity = 0
+var (
+	// ErrNotInitialized is returned when the dispatcher hasn't been initialized
+	ErrNotInitialized error = errors.New("Dispatcher not initialized")
+	// ErrSeverityAboveMax is returned when the message's severity is above the max severity level. See LOGTHING_LOG_MAX_SEVERITY
+	ErrSeverityAboveMax error = errors.New("LogMessage severity level above LOGTHING_LOG_MAX_SEVERITY")
+	// ErrWrongMessageType is returned whe the log message is of wrong type. Ensure that LogMessage has been created by calling NewLogMsg()
+	ErrWrongMessageType error = errors.New("LogMessage is of wrong type")
+	// ErrChannelFull is returned when there is no empty space in the LogMessage queue
+	ErrChannelFull error = errors.New("Channel full")
 )
 
 func unwrappedErrorStrings(err error) []string {
@@ -143,55 +98,23 @@ func stringSetFromSlice(slice []string) (set map[string]struct{}) {
 	return set
 }
 
-type configStruct struct {
-	logName               string
-	logMaxSeverity        Severity
-	whitelistLogTypes     map[string]struct{}
-	printMaxSeverity      Severity
-	printOutputProperties map[string]struct{}
-}
-
-var config configStruct = configStruct{
-	logName:               os.Getenv("SERVICE_NAME"),
-	logMaxSeverity:        SeverityError,
-	whitelistLogTypes:     map[string]struct{}{},
-	printMaxSeverity:      SeverityTrace,
-	printOutputProperties: map[string]struct{}{},
-}
-
-func initConfig() {
-	if config.logName == "" {
-		if logName := os.Getenv("LOGTHING_LOG_NAME"); logName != "" {
-			config.logName = logName
-		}
-	}
-	if logMaxSeverity, err := strconv.Atoi(os.Getenv("LOGTHING_LOG_MAX_SEVERITY")); err == nil {
-		config.logMaxSeverity = Severity(logMaxSeverity)
-	}
-	config.whitelistLogTypes = stringSetFromSlice(strings.Split(os.Getenv("LOGTHING_WHITELIST_LOG_TYPES"), ","))
-	if printMaxSeverity, err := strconv.Atoi(os.Getenv("LOGTHING_PRINT_MAX_SEVERITY")); err == nil {
-		config.printMaxSeverity = Severity(printMaxSeverity)
-	}
-	config.printOutputProperties = stringSetFromSlice(strings.Split(os.Getenv("LOGTHING_PRINT_PROPERTIES"), ","))
-}
-
 func init() {
 	initConfig()
 	isSystemD := (os.Getenv("INVOCATION_ID") != "")
-	for lvl := Severity(0); lvl < SeverityNotApplied; lvl++ {
+	for severityLevel := Severity(0); severityLevel < SeverityNotApplied; severityLevel++ {
 		writer := os.Stdout
-		if lvl <= SeverityError {
+		if severityLevel <= SeverityError {
 			writer = os.Stderr
 		}
-		prefix := logPrefixes[lvl]
+		prefix := logPrefixes[severityLevel]
 		flag := log.Lshortfile | log.LstdFlags
 		if isSystemD {
-			prefix = fmt.Sprintf("<%v>%v", lvl, logPrefixes[lvl])
+			prefix = fmt.Sprintf("<%v>%v", severityLevel, logPrefixes[severityLevel])
 			flag = log.Lshortfile
 		}
-		*loggers[lvl] = log.New(writer, prefix, flag)
-		if lvl > config.printMaxSeverity {
-			(*loggers[lvl]).SetOutput(ioutil.Discard)
+		*loggers[severityLevel] = log.New(writer, prefix, flag)
+		if !config.printSeverity(severityLevel) {
+			(*loggers[severityLevel]).SetOutput(ioutil.Discard)
 		}
 	}
 }
@@ -213,7 +136,7 @@ func Close() {
 	}
 }
 
-// LogMsg outputs and sends LogMessage with default dispatcher
+// Log outputs and sends LogMessage with default dispatcher
 //
 // returns:
 //
@@ -224,11 +147,11 @@ func Close() {
 // ErrWrongMessageType whe the log message is of wrong type. Ensure that LogMessage has been created by calling NewLogMsg()
 //
 // ErrChannelFull when there is no empty space in the LogMessage queue
-func LogMsg(msg LogMessage) (err error) {
-	return logMsgWithCalldev(2, msg)
+func Log(msg LogMsg) (err error) {
+	return logMsgWithCalldepth(2, msg)
 }
 
-func logMsgWithCalldev(calldepth int, msg LogMessage) (err error) {
+func logMsgWithCalldepth(calldepth int, msg LogMsg) (err error) {
 	if ld == nil {
 		return ErrNotInitialized
 	}
