@@ -38,7 +38,7 @@ type azureMonitor struct {
 // LOGTHING_LOG_NAME or SERVICE_NAME  - Log name under which log messages are stored (will be used as elasticsearch index or azure custom log type)
 // LOGTHING_AZURE_WORKSPACE_ID        - Azure log analytics workspace id
 // LOGTHING_AZURE_WORKSPACE_KEY       - Azure log analytics worksoace key
-// LOGTHING_AZURE_MONITOR_DOMAIN 		  - To overwrite the default azure monitor domain
+// LOGTHING_AZURE_MONITOR_DOMAIN 		  - (optional) to overwrite the default azure monitor domain e.g. in China
 //
 // If httpClient is nil, http.DefaultClient will be used
 func NewAzureMonitorWriter() LogWriter {
