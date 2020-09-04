@@ -1,6 +1,4 @@
-# logthing
-
-[![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/rs/zerolog/master/LICENSE)
+# logthing [![GoDoc](https://godoc.org/github.com/mfmayer/logthing?status.svg)](https://godoc.org/github.com/mfmayer/logthing) [![license](http://img.shields.io/badge/license-MIT-green.svg?style=flat)](https://raw.githubusercontent.com/mfmayer/logthing/master/LICENSE)
 
 logthing is just another logging module that implements structured json logging. It's focus lies on providing dispatching functionality to write logs and metrics to cloud servcies like Azure Monitor (Azure Log Analytics workspaces) and ElasticSearch. By implementing the LogWriters interface it can be extended to log to additional log stores.
 

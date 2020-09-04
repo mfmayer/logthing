@@ -23,7 +23,7 @@ var config configStruct = configStruct{
 }
 
 func (c configStruct) printSeverity(severity Severity) bool {
-	return severity < config.printMaxSeverity && config.printMaxSeverity != SeverityNotApplied
+	return severity <= config.printMaxSeverity && config.printMaxSeverity != SeverityNotApplied
 }
 
 func initConfig() {
