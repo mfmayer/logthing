@@ -1,6 +1,6 @@
-# logthing [![GoDoc](https://godoc.org/github.com/mfmayer/logthing?status.svg)](https://godoc.org/github.com/mfmayer/logthing) [![license](http://img.shields.io/badge/license-MIT-green.svg?style=flat)](https://raw.githubusercontent.com/mfmayer/logthing/master/LICENSE)
+# logthing [![GoDoc](https://godoc.org/github.com/mfmayer/logthing?status.svg)](https://godoc.org/github.com/mfmayer/logthing) [![license](http://img.shields.io/badge/license-MIT-green.svg?style=flat)](https://raw.githubusercontent.com/mfmayer/logthing/master/LICENSE) [![HitCount](http://hits.dwyl.com/mfmayer/logthing.svg)](http://hits.dwyl.com/mfmayer/logthing)
 
-logthing is just another logging module that implements structured json logging. It's focus lies on providing dispatching functionality to write logs and metrics to cloud servcies like Azure Monitor (Azure Log Analytics workspaces) and ElasticSearch. By implementing the LogWriters interface it can be extended to log to additional log stores.
+Just another logging module that supports logging of structured Json protocol messages. The main feature is the ability to send log messages and metrics to cloud services such as Azure Monitor (Azure Log Analytics Workspaces) and Elasticsearch. By implementing the LogWriters interface it can be extended to log to additional log stores.
 
 The following log writers are part of the logwriter package:
 
