@@ -92,7 +92,7 @@ func (lm *logMsg) Log() error {
 	return logMsgWithCalldepth(2, lm)
 }
 
-// SetSeverity sets log message severity level (only if given severity level is lower than current)
+// SetType sets log message type
 func (lm *logMsg) SetType(msgType string) LogMsg {
 	if lm != nil {
 		lm.logMessageType = msgType
@@ -100,9 +100,9 @@ func (lm *logMsg) SetType(msgType string) LogMsg {
 	return lm
 }
 
-// Severity returns log message severity level
+// Type returns log message type
 func (lm *logMsg) Type() string {
-	if lm == nil {
+	if lm != nil {
 		return lm.logMessageType
 	}
 	return ""
@@ -120,7 +120,7 @@ func (lm *logMsg) SetSeverity(severity Severity) LogMsg {
 
 // Severity returns log message severity level
 func (lm *logMsg) Severity() Severity {
-	if lm == nil {
+	if lm != nil {
 		return SeverityNotApplied
 	}
 	return lm.severity
@@ -136,7 +136,7 @@ func (lm *logMsg) SetTrackingID(trackingID string) LogMsg {
 
 // TrackingID returns log message tracking ID
 func (lm *logMsg) TrackingID() string {
-	if lm == nil {
+	if lm != nil {
 		return ""
 	}
 	return lm.trackingID
@@ -152,7 +152,7 @@ func (lm *logMsg) SetTimestamp(timestamp time.Time) LogMsg {
 
 // Timestamp returns log message timestamp
 func (lm *logMsg) Timestamp() time.Time {
-	if lm == nil {
+	if lm != nil {
 		return time.Time{}
 	}
 	return time.Time(lm.timestamp)
