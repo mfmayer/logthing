@@ -121,9 +121,9 @@ func (lm *logMsg) SetSeverity(severity Severity) LogMsg {
 // Severity returns log message severity level
 func (lm *logMsg) Severity() Severity {
 	if lm != nil {
-		return SeverityNotApplied
+		return lm.severity
 	}
-	return lm.severity
+	return SeverityNotApplied
 }
 
 // SetTrackingID sets log message tracking ID
@@ -137,9 +137,9 @@ func (lm *logMsg) SetTrackingID(trackingID string) LogMsg {
 // TrackingID returns log message tracking ID
 func (lm *logMsg) TrackingID() string {
 	if lm != nil {
-		return ""
+		return lm.trackingID
 	}
-	return lm.trackingID
+	return ""
 }
 
 // SetTimestamp sets log message timestamp
@@ -153,9 +153,9 @@ func (lm *logMsg) SetTimestamp(timestamp time.Time) LogMsg {
 // Timestamp returns log message timestamp
 func (lm *logMsg) Timestamp() time.Time {
 	if lm != nil {
-		return time.Time{}
+		return time.Time(lm.timestamp)
 	}
-	return time.Time(lm.timestamp)
+	return time.Time{}
 }
 
 // SetProperty allows to add any structured information to the log message that can be marshalled to JSON

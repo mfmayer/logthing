@@ -1,7 +1,7 @@
 package logwriter
 
-// elasticsearchURL:  os.Getenv("ELASTICSEARCH_URL"),
-// elasticsearchUser: os.Getenv("ELASTICSEARCH_USER"),
-// elasticsearchPwd:  os.Getenv("ELASTICSEARCH_PWD"),
+// elasticsearchURL:  os.Getenv("LOGTHING_ELASTICSEARCH_URL"),
+// elasticsearchUser: os.Getenv("LOGTHING_ELASTICSEARCH_USER"),
+// elasticsearchPwd:  os.Getenv("LOGTHING_ELASTICSEARCH_PWD"),
 
 // TODO: To be implemented
