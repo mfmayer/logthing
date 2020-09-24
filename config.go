@@ -15,7 +15,7 @@ type configStruct struct {
 }
 
 var config configStruct = configStruct{
-	logName:               os.Getenv("SERVICE_NAME"),
+	logName:               os.Getenv("LOGTHING_LOG_NAME"),
 	logMaxSeverity:        SeverityError,
 	whitelistLogTypes:     map[string]struct{}{},
 	printMaxSeverity:      SeverityTrace,
@@ -28,9 +28,7 @@ func (c configStruct) printSeverity(severity Severity) bool {
 
 func initConfig() {
 	if config.logName == "" {
-		if logName := os.Getenv("LOGTHING_LOG_NAME"); logName != "" {
-			config.logName = logName
-		}
+		config.logName = os.Getenv("SERVICE_NAME")
 	}
 	if logMaxSeverity, err := strconv.Atoi(os.Getenv("LOGTHING_LOG_MAX_SEVERITY")); err == nil {
 		config.logMaxSeverity = Severity(logMaxSeverity)

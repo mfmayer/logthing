@@ -32,9 +32,12 @@ func newLogDispatcher(logWriters []logwriter.LogWriter) (ld *logDispatcher, err 
 		logMessageCh: make(chan *logMsg, 4096),
 		done:         make(chan bool),
 	}
+	lwConfig := logwriter.Config{
+		LogName: config.logName,
+	}
 	var lwInitErrors []error
 	for _, logWriter := range logWriters {
-		lwInitError := logWriter.Init()
+		lwInitError := logWriter.Init(lwConfig)
 		if lwInitError == nil {
 			ld.logWriters = append(ld.logWriters, logWriter)
 		} else {

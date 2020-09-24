@@ -39,26 +39,16 @@ type azureMonitor struct {
 // LOGTHING_AZURE_WORKSPACE_ID        - Azure log analytics workspace id
 // LOGTHING_AZURE_WORKSPACE_KEY       - Azure log analytics worksoace key
 // LOGTHING_AZURE_MONITOR_DOMAIN 		  - (optional) to overwrite the default azure monitor domain e.g. in China
-//
-// If httpClient is nil, http.DefaultClient will be used
 func NewAzureMonitorWriter() LogWriter {
 	azWorkspaceID := os.Getenv("LOGTHING_AZURE_WORKSPACE_ID")
 	azWorkspaceKey := os.Getenv("LOGTHING_AZURE_WORKSPACE_KEY")
-	azLogType := os.Getenv("SERVICE_NAME")
-	if azLogType == "" {
-		azLogType = os.Getenv("LOGTHING_LOG_NAME")
-	}
 	azMonitorDomain := "ods.opinsights.azure.com"
 	if amd := os.Getenv("LOGTHING_AZURE_MONITOR_DOMAIN"); amd != "" {
 		azMonitorDomain = amd
 	}
-	// if httpClient == nil {
-	// 	httpClient = http.DefaultClient
-	// }
 	writer := &azureMonitor{
 		azWorkspaceID: azWorkspaceID,
 		azKey:         azWorkspaceKey,
-		azLogType:     azLogType,
 		httpClient:    http.DefaultClient,
 		azDomain:      azMonitorDomain,
 	}
@@ -85,7 +75,8 @@ func (am *azureMonitor) azCreateSignatureString(contentLength int) (signature st
 	return
 }
 
-func (am *azureMonitor) Init() error {
+func (am *azureMonitor) Init(config Config) error {
+	am.azLogType = config.LogName
 	if am.azWorkspaceID == "" {
 		return fmt.Errorf("Envrionment variable \"LOGTHING_AZURE_WORKSPACE_ID\" must be set")
 	}
