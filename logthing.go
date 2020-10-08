@@ -107,10 +107,10 @@ func init() {
 			writer = os.Stderr
 		}
 		prefix := logPrefixes[severityLevel]
-		flag := log.Lshortfile | log.LstdFlags
+		flag := log.LstdFlags //log.Lshortfile | log.LstdFlags
 		if isSystemD {
 			prefix = fmt.Sprintf("<%v>%v", severityLevel, logPrefixes[severityLevel])
-			flag = log.Lshortfile
+			flag = 0
 		}
 		*loggers[severityLevel] = log.New(writer, prefix, flag)
 		if !config.printSeverity(severityLevel) {

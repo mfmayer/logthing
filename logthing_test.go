@@ -1,6 +1,7 @@
 package logthing_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/mfmayer/logthing"
@@ -24,13 +25,21 @@ func TestLogthing(t *testing.T) {
 	logthing.Log(logMsg)                                // log the message
 
 	// The calls can be also lined up as in this additional example:
-	logthing.NewLogMsg("<another_type>").
+	lm := logthing.NewLogMsg("<another_type>").
 		Infof("Hello %v", []string{"Mom", "Dad"}).                                      // add an info message
 		SetSProperty("windS", map[string]interface{}{"speed": 10, "directions": 25.5}). // add stringified wind property
 		SetProperty("wind", map[string]interface{}{"speed": 10, "directions": 25.5}).   // add non-stringified wind property
 		SetProperty("rain", 10).                                                        // add rain property
-		Warningf("The weather is %v", []string{"rainy", "stormy"}).                     // add a warning message
-		Log()                                                                           // log the message
+		Warningf("warning: The weather is %v", []string{"rainy", "stormy"}).            // add a warning message
+		Errorf("error: This is an error").
+		Info("an info").
+		Emergencyf("an emergency").
+		Errorf("another error").
+		Warningf("another warning")
+
+	lm.Log()
+
+	fmt.Println(lm.OutputWithMaxSeverity(logthing.SeverityError))
 
 	logthing.Close()
 }

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -131,12 +133,20 @@ func (ld *logDispatcher) writeLogMessages(logMessages []*logMsg) {
 
 // printLogMsg formats and prints the log message
 func printLogMsg(calldepth int, msg *logMsg) {
-	if len(msg.output) > 0 && config.printSeverity(msg.Severity()) {
+	output := msg.Output()
+	if len(output) > 0 && config.printSeverity(msg.Severity()) {
 		var lg *log.Logger
 		if msg.severity < SeverityNotApplied {
 			lg = *loggers[msg.severity]
 		}
-		outputProperties := []string{}
+		_, file, line, ok := runtime.Caller(calldepth)
+		if !ok {
+			file = "???"
+			line = 0
+		} else {
+			file = filepath.Base(file)
+		}
+		outputProperties := []string{fmt.Sprintf("%v:%v", file, line)}
 		for outputProperty := range config.printOutputProperties {
 			if outputPropertyValue := msg.Property(outputProperty); outputPropertyValue != nil {
 				v := fmt.Sprintf("%v:%v", outputProperty, outputPropertyValue)
@@ -147,10 +157,10 @@ func printLogMsg(calldepth int, msg *logMsg) {
 		}
 		calldepth++
 		logString := ""
-		logString += strings.Join(msg.output, "\n                           ")
+		logString += strings.Join(output, "\n                           ")
 		if len(outputProperties) > 0 {
 			outputPropertiesString := fmt.Sprintf("(%v)", outputProperties)
-			if len(msg.output) > 1 {
+			if len(output) > 1 {
 				lg.Output(calldepth, outputPropertiesString+"\n                           "+logString)
 			} else {
 				lg.Output(calldepth, logString+" "+outputPropertiesString)
