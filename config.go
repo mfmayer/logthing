@@ -39,3 +39,18 @@ func initConfig() {
 	}
 	config.printOutputProperties = stringSetFromSlice(strings.Split(os.Getenv("LOGTHING_PRINT_PROPERTIES"), ","))
 }
+
+// ConfigLogName returns configured log name (LOGTHING_LOG_NAME or SERVICE_NAME)
+func ConfigLogName() string {
+	return config.logName
+}
+
+// ConfigLogMaxSeverity returns configured max severity for which log messages will be written (LOGTHING_LOG_MAX_SEVERITY)
+func ConfigLogMaxSeverity() Severity {
+	return config.logMaxSeverity
+}
+
+// ConfigPrintMaxSeverity returns configure max severity for which log messages will be printed to stdout/stderr (LOGTHING_PRINT_MAX_SEVERITY)
+func ConfigPrintMaxSeverity() Severity {
+	return config.printMaxSeverity
+}
