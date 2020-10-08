@@ -63,7 +63,8 @@ type LogMsg interface {
 	Property(key string) interface{}                              // returns value with given key. If the value isn't found, ok will be false.
 	Properties() map[string]interface{}                           // returns property map
 	Output() []string                                             // returns output data
-	OutputWithMaxSeverity(maxSeverity Severity) []string          // returns output data added with max severity
+	OutputWithMaxSeverity(maxSeverity Severity) []string          // returns output data added with given max severity
+	OutputAccordingLogMaxSeverity() []string                      // returns output data added with configured log max severity
 	Trace(output ...interface{}) LogMsg                           // appends output data to be printed and implicitly sets appropriate severity level
 	Tracef(format string, v ...interface{}) LogMsg                // appends output data to be printed and implicitly sets appropriate severity level
 	Info(output ...interface{}) LogMsg                            // appends output data to be printed and implicitly sets appropriate severity level
@@ -243,6 +244,10 @@ func (lm *logMsg) OutputWithMaxSeverity(maxSeverity Severity) []string {
 		return ret
 	}
 	return nil
+}
+
+func (lm *logMsg) OutputAccordingLogMaxSeverity() []string {
+	return lm.OutputWithMaxSeverity(config.logMaxSeverity)
 }
 
 // Trace appends output data to be printed and implicitly sets appropriate severity level
