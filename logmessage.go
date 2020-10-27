@@ -32,9 +32,13 @@ const (
 	SeverityEmergency Severity = 0
 )
 
-type outputString struct {
+type severityString struct {
 	severity Severity
 	str      string
+}
+
+func (os *severityString) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%s%s\"", getLogPrefix(os.severity), os.str)), nil
 }
 
 // logMsg type consists of multiple log entries
@@ -43,7 +47,7 @@ type logMsg struct {
 	logMessageType string
 	severity       Severity
 	trackingID     string
-	output         []outputString
+	output         []severityString
 	properties     interface{} //map[string]interface{}
 }
 
@@ -346,11 +350,11 @@ func (lm *logMsg) appendOutput(calldepth int, severity Severity, values ...inter
 		}
 		lm.SetSeverity(severity)
 		if len(values) == 1 {
-			lm.output = append(lm.output, outputString{severity, fmt.Sprintf("%v:%v: %v", file, line, values[0])})
+			lm.output = append(lm.output, severityString{severity, fmt.Sprintf("%v:%v: %v", file, line, values[0])})
 		} else {
-			lm.output = append(lm.output, outputString{severity, fmt.Sprintf("%v:%v:", file, line)})
+			lm.output = append(lm.output, severityString{severity, fmt.Sprintf("%v:%v:", file, line)})
 			for _, v := range values {
-				lm.output = append(lm.output, outputString{severity, fmt.Sprintf("%v", v)})
+				lm.output = append(lm.output, severityString{severity, fmt.Sprintf("%v", v)})
 			}
 		}
 	}

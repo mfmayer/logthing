@@ -43,7 +43,7 @@ func (t UTCTime) MarshalJSON() ([]byte, error) {
 var (
 	ld            *logDispatcher // default log dispatcher
 	loggers       = []**log.Logger{&Emergency, &Alert, &Critical, &Error, &Warning, &Notice, &Info, &Trace}
-	logPrefixes   = []string{"EMERG: ", "ALERT: ", "CRIT:  ", "ERROR: ", "WARN:  ", "NOTICE:", "INFO:  ", "TRACE: "}
+	logPrefixes   = []string{"EMERG: ", "ALERT: ", "CRIT:  ", "ERROR: ", "WARN:  ", "NOTICE:", "INFO:  ", "TRACE: ", "N/A:   "}
 	severityNames = []string{"Emergency", "Alert", "Critical", "Error", "Warnin", "Notice", "Info", "Trace"}
 )
 
@@ -117,6 +117,13 @@ func init() {
 			(*loggers[severityLevel]).SetOutput(ioutil.Discard)
 		}
 	}
+}
+
+func getLogPrefix(severity Severity) string {
+	if severity >= 0 && severity < SeverityNotApplied {
+		return logPrefixes[severity]
+	}
+	return logPrefixes[SeverityNotApplied]
 }
 
 // InitDispatcher to init logthing log message dispatcher with given writers.
