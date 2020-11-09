@@ -38,7 +38,15 @@ type severityString struct {
 }
 
 func (os *severityString) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf("\"%s%s\"", getLogPrefix(os.severity), os.str)), nil
+	// Format String
+	str := fmt.Sprintf("\"%s%s\"", getLogPrefix(os.severity), os.str)
+
+	// Marshal String to escape quotes
+	bytes, err := json.Marshal(str)
+	if err != nil {
+		panic(err)
+	}
+	return bytes, nil
 }
 
 // logMsg type consists of multiple log entries
