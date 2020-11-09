@@ -41,12 +41,8 @@ func (os *severityString) MarshalJSON() ([]byte, error) {
 	// Format String
 	str := fmt.Sprintf("\"%s%s\"", getLogPrefix(os.severity), os.str)
 
-	// Marshal String to escape quotes
-	bytes, err := json.Marshal(str)
-	if err != nil {
-		panic(err)
-	}
-	return bytes, nil
+	// Marshal String to escape quotes and return byte array + error
+	return json.Marshal(str)
 }
 
 // logMsg type consists of multiple log entries
