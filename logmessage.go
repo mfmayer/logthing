@@ -39,7 +39,7 @@ type severityString struct {
 
 func (os *severityString) MarshalJSON() ([]byte, error) {
 	// Format String
-	str := fmt.Sprintf("\"%s%s\"", getLogPrefix(os.severity), os.str)
+	str := getLogPrefix(os.severity)+os.str
 
 	// Marshal String to escape quotes and return byte array + error
 	return json.Marshal(str)
