@@ -155,10 +155,21 @@ func Close() {
 //
 // ErrChannelFull when there is no empty space in the LogMessage queue
 func Log(msg LogMsg) (err error) {
-	return logMsgWithCalldepth(2, msg)
+	return LogMsgWithCalldepth(2, msg)
 }
 
-func logMsgWithCalldepth(calldepth int, msg LogMsg) (err error) {
+// LogMsgWithCalldepth outputs and sends LogMessage with default dispatcher
+//
+// returns:
+//
+// ErrNotInitialized when the dispatcher hasn't been initialized
+//
+// ErrSeverityAboveMax when the message's severity is above the max severity level. See LOGTHING_LOG_MAX_SEVERITY
+//
+// ErrWrongMessageType whe the log message is of wrong type. Ensure that LogMessage has been created by calling NewLogMsg()
+//
+// ErrChannelFull when there is no empty space in the LogMessage queue
+func LogMsgWithCalldepth(calldepth int, msg LogMsg) (err error) {
 	if ld == nil {
 		return ErrNotInitialized
 	}

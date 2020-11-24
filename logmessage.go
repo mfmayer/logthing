@@ -39,7 +39,7 @@ type severityString struct {
 
 func (os *severityString) MarshalJSON() ([]byte, error) {
 	// Format String
-	str := getLogPrefix(os.severity)+os.str
+	str := getLogPrefix(os.severity) + os.str
 
 	// Marshal String to escape quotes and return byte array + error
 	return json.Marshal(str)
@@ -90,7 +90,7 @@ type LogMsg interface {
 	Emergency(output ...interface{}) LogMsg                       // appends output data to be printed and implicitly sets appropriate severity level
 	Emergencyf(format string, v ...interface{}) LogMsg            // appends output data to be printed and implicitly sets appropriate severity level
 	AppendOutput(severity Severity, output ...interface{}) LogMsg // appends information to be printed and sets given severity level
-	Log() error                                                   // is a convenience function for LogMsg(LogMessage)
+	Log() error                                                   // is a convenience function for Log(LogMessage) / LogMsgWithCalldepth(calldepth, LogMessage)
 }
 
 // NewLogMsg creates new log message and sets the given type
@@ -104,7 +104,7 @@ func NewLogMsg(messageType string) LogMsg {
 
 // Log is a convenience function for LogMsg(LogMessage)
 func (lm *logMsg) Log() error {
-	return logMsgWithCalldepth(2, lm)
+	return LogMsgWithCalldepth(2, lm)
 }
 
 // SetType sets log message type
