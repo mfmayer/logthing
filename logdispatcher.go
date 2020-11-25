@@ -131,10 +131,13 @@ func (ld *logDispatcher) writeLogMessages(logMessages []*logMsg) {
 	}
 }
 
-// printLogMsg formats and prints the log message
+// printLogMsg formats and prints the log message's properties and given output
 func printLogMsg(calldepth int, msg *logMsg) {
-	output := msg.OutputAccordingPrintMaxSeverity()
-	if len(output) > 0 && config.meetsPrintSeverity(msg.Severity()) {
+	if msg == nil {
+		return
+	}
+	output := msg.Output()
+	if len(output) > 0 {
 		var lg *log.Logger
 		if msg.severity < SeverityNotApplied {
 			lg = *loggers[msg.severity]
@@ -157,11 +160,11 @@ func printLogMsg(calldepth int, msg *logMsg) {
 		}
 		calldepth++
 		logString := ""
-		logString += strings.Join(output, "\n                           ")
+		logString += strings.Join(output, newLineSpacer)
 		if len(outputProperties) > 0 {
 			outputPropertiesString := fmt.Sprintf("(%v)", outputProperties)
 			if len(output) > 1 {
-				lg.Output(calldepth, outputPropertiesString+"\n                           "+logString)
+				lg.Output(calldepth, outputPropertiesString+newLineSpacer+logString)
 			} else {
 				lg.Output(calldepth, logString+" "+outputPropertiesString)
 			}
@@ -181,10 +184,10 @@ func (ld *logDispatcher) log(calldepth int, logMessage LogMsg) error {
 	// Set at least trace severity
 	msg.SetSeverity(SeverityTrace)
 
-	// Drop message if severity is greater than configured logSeverity and according logType is not explicitely defined
+	// Drop message if severity is greater than configured logSeverity and according logType is not explicitely whitelisted
 	if msg.severity > config.logMaxSeverity {
 		if len(msg.logMessageType) > 0 {
-			if _, found := config.whitelistLogTypes[msg.logMessageType]; !found {
+			if !config.isWhitelisted(msg.logMessageType) {
 				return ErrSeverityAboveMax
 			}
 		}

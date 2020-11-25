@@ -6,15 +6,9 @@
 // Besides logging to cloud services, logthing also supports to write logs to stdout and stderr simultaneously.
 //
 // The following environemnt variables can be used to configure the behaviour:
-//
 // LOGTHING_LOG_NAME or SERVICE_NAME  - Log name under which log messages are stored (will be used as elasticsearch index or azure custom log type)
-//
 // LOGTHING_LOG_MAX_SEVERITY          - Messages with severity > LOGTHING_LOG_MAX_SEVERITY won't be logged and are immediately dropped
-//
-// LOGTHING_WHITELIST_LOG_TYPES       - Messages that match any whitelisted log type (comma separated) are logged independent of their severity
-//
-// LOGTHING_PRINT_MAX_SEVERITY        - Messages with severity <= LOG_OUTPUT_SEVERITY_MAX are directly printed to stdout / stderr
-//
+// LOGTHING_WHITELIST_LOG_TYPES       - Messages that match any whitelisted log type (comma separated) are logged independently of their severity
 // LOGTHING_PRINT_PROPERTIES          - Message properties that match any give print property (comma separated) are printed with the message output
 //
 // Note: Severity increases with lower values (SeverityEmergency: 0 ... SeverityTrace: 7)
@@ -23,7 +17,6 @@ package logthing
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -45,6 +38,7 @@ var (
 	loggers       = []**log.Logger{&Emergency, &Alert, &Critical, &Error, &Warning, &Notice, &Info, &Trace}
 	logPrefixes   = []string{"EMERG: ", "ALERT: ", "CRIT:  ", "ERROR: ", "WARN:  ", "NOTICE:", "INFO:  ", "TRACE: ", "N/A:   "}
 	severityNames = []string{"Emergency", "Alert", "Critical", "Error", "Warnin", "Notice", "Info", "Trace"}
+	newLineSpacer = "\n       "
 )
 
 var (
@@ -113,9 +107,6 @@ func init() {
 			flag = 0
 		}
 		*loggers[severityLevel] = log.New(writer, prefix, flag)
-		if !config.meetsPrintSeverity(severityLevel) {
-			(*loggers[severityLevel]).SetOutput(ioutil.Discard)
-		}
 	}
 }
 
@@ -144,30 +135,20 @@ func Close() {
 }
 
 // Log outputs and sends LogMessage with default dispatcher
-//
 // returns:
-//
 // ErrNotInitialized when the dispatcher hasn't been initialized
-//
 // ErrSeverityAboveMax when the message's severity is above the max severity level. See LOGTHING_LOG_MAX_SEVERITY
-//
 // ErrWrongMessageType whe the log message is of wrong type. Ensure that LogMessage has been created by calling NewLogMsg()
-//
 // ErrChannelFull when there is no empty space in the LogMessage queue
 func Log(msg LogMsg) (err error) {
 	return LogMsgWithCalldepth(2, msg)
 }
 
 // LogMsgWithCalldepth outputs and sends LogMessage with default dispatcher
-//
 // returns:
-//
 // ErrNotInitialized when the dispatcher hasn't been initialized
-//
 // ErrSeverityAboveMax when the message's severity is above the max severity level. See LOGTHING_LOG_MAX_SEVERITY
-//
 // ErrWrongMessageType whe the log message is of wrong type. Ensure that LogMessage has been created by calling NewLogMsg()
-//
 // ErrChannelFull when there is no empty space in the LogMessage queue
 func LogMsgWithCalldepth(calldepth int, msg LogMsg) (err error) {
 	if ld == nil {

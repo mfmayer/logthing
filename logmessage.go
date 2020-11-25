@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -32,33 +33,20 @@ const (
 	SeverityEmergency Severity = 0
 )
 
-type severityString struct {
-	severity Severity
-	str      string
-}
-
-func (os *severityString) MarshalJSON() ([]byte, error) {
-	// Format String
-	str := getLogPrefix(os.severity) + os.str
-
-	// Marshal String to escape quotes and return byte array + error
-	return json.Marshal(str)
-}
-
 // logMsg type consists of multiple log entries
 type logMsg struct {
 	timestamp      UTCTime
 	logMessageType string
 	severity       Severity
 	trackingID     string
-	output         []severityString
+	output         []string
 	properties     interface{} //map[string]interface{}
 }
 
 // LogMsg is the interface to build up a log message with structured data and formatted text.
 // Structured data and formatted text will be dispatched to log writers. The formatted text will be also printed to stderr and stdout.
 type LogMsg interface {
-	SetType(msgType string) LogMsg                                // sets log message type
+	//SetType(msgType string) LogMsg                                // sets log message type
 	Type() string                                                 // returns log message type
 	SetSeverity(severity Severity) LogMsg                         // sets log message severity level (only if given severity level is lower than current)
 	Severity() Severity                                           // returns log message severity level
@@ -71,8 +59,6 @@ type LogMsg interface {
 	Property(key string) interface{}                              // returns value with given key. If the value isn't found, ok will be false.
 	Properties() map[string]interface{}                           // returns property map
 	Output() []string                                             // returns output data
-	OutputWithMaxSeverity(maxSeverity Severity) []string          // returns output data added with given max severity
-	OutputAccordingPrintMaxSeverity() []string                    // returns output data added with configured print max severity
 	Trace(output ...interface{}) LogMsg                           // appends output data to be printed and implicitly sets appropriate severity level
 	Tracef(format string, v ...interface{}) LogMsg                // appends output data to be printed and implicitly sets appropriate severity level
 	Info(output ...interface{}) LogMsg                            // appends output data to be printed and implicitly sets appropriate severity level
@@ -105,14 +91,6 @@ func NewLogMsg(messageType string) LogMsg {
 // Log is a convenience function for LogMsg(LogMessage)
 func (lm *logMsg) Log() error {
 	return LogMsgWithCalldepth(2, lm)
-}
-
-// SetType sets log message type
-func (lm *logMsg) SetType(msgType string) LogMsg {
-	if lm != nil {
-		lm.logMessageType = msgType
-	}
-	return lm
 }
 
 // Type returns log message type
@@ -232,30 +210,9 @@ func (lm *logMsg) Properties() map[string]interface{} {
 
 func (lm *logMsg) Output() []string {
 	if lm != nil {
-		ret := make([]string, len(lm.output))
-		for i, os := range lm.output {
-			ret[i] = os.str
-		}
-		return ret
+		return lm.output
 	}
 	return nil
-}
-
-func (lm *logMsg) OutputWithMaxSeverity(maxSeverity Severity) []string {
-	if lm != nil {
-		ret := []string{}
-		for _, os := range lm.output {
-			if os.severity <= maxSeverity {
-				ret = append(ret, os.str)
-			}
-		}
-		return ret
-	}
-	return nil
-}
-
-func (lm *logMsg) OutputAccordingPrintMaxSeverity() []string {
-	return lm.OutputWithMaxSeverity(config.printMaxSeverity)
 }
 
 // Trace appends output data to be printed and implicitly sets appropriate severity level
@@ -344,22 +301,34 @@ func (lm *logMsg) AppendOutput(severity Severity, output ...interface{}) LogMsg 
 }
 
 func (lm *logMsg) appendOutput(calldepth int, severity Severity, values ...interface{}) *logMsg {
-	if lm != nil && len(values) > 0 {
-		_, file, line, ok := runtime.Caller(calldepth)
-		if !ok {
-			file = "???"
-			line = 0
-		} else {
-			file = filepath.Base(file)
-		}
-		lm.SetSeverity(severity)
-		if len(values) == 1 {
-			lm.output = append(lm.output, severityString{severity, fmt.Sprintf("%v:%v: %v", file, line, values[0])})
-		} else {
-			lm.output = append(lm.output, severityString{severity, fmt.Sprintf("%v:%v:", file, line)})
-			for _, v := range values {
-				lm.output = append(lm.output, severityString{severity, fmt.Sprintf("%v", v)})
-			}
+	if lm == nil || len(values) <= 0 {
+		return lm
+	}
+	lm.SetSeverity(severity)
+	if len(values) <= 0 {
+		return lm
+	}
+	if !config.meetsLogMaxSeverity(severity) && !config.isWhitelisted(lm.logMessageType) {
+		return lm
+	}
+	_, file, line, ok := runtime.Caller(calldepth)
+	if !ok {
+		file = "???"
+		line = 0
+	} else {
+		file = filepath.Base(file)
+	}
+	outputLines := []string{}
+	for _, value := range values {
+		lines := strings.Split(fmt.Sprint(value), "\n")
+		outputLines = append(outputLines, lines...)
+	}
+	if len(outputLines) == 1 {
+		lm.output = append(lm.output, fmt.Sprintf("[%v:%v]: %v", file, line, outputLines[0]))
+	} else {
+		lm.output = append(lm.output, fmt.Sprintf("[%v:%v]:", file, line))
+		for _, outputLine := range outputLines {
+			lm.output = append(lm.output, "  "+outputLine)
 		}
 	}
 	return lm

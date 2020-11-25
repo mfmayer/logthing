@@ -16,6 +16,11 @@ func TestLogthing(t *testing.T) {
 		logthing.Error.Printf("Error init dispatcher: %v", err)
 	}
 
+	fmt.Printf("ConfigLogName                     : %v\n", logthing.ConfigLogName())
+	fmt.Printf("ConfigLogMaxSeverity              : %v\n", logthing.ConfigLogMaxSeverity())
+	fmt.Printf("ConfigWhiteListLogTypes           : %v\n", logthing.ConfigWhiteListLogTypes())
+	fmt.Printf("print ConfigPrintOutputProperties : %v\n", logthing.ConfigPrintOutputProperties())
+
 	logMsg := logthing.NewLogMsg("<some_type>")
 	logMsg.SetTrackingID("<some_tracking_id>")          // Add a tracking id
 	logMsg.SetProperty("foo_bar", 12345)                // set a property
@@ -25,21 +30,19 @@ func TestLogthing(t *testing.T) {
 	logthing.Log(logMsg)                                // log the message
 
 	// The calls can be also lined up as in this additional example:
-	lm := logthing.NewLogMsg("<another_type>").
+	logthing.NewLogMsg("<another_type>").
 		Infof("Hello %v", []string{"Mom", "Dad"}).                                      // add an info message
 		SetSProperty("windS", map[string]interface{}{"speed": 10, "directions": 25.5}). // add stringified wind property
 		SetProperty("wind", map[string]interface{}{"speed": 10, "directions": 25.5}).   // add non-stringified wind property
 		SetProperty("rain", 10).                                                        // add rain property
 		Warningf("warning: The weather is %v", []string{"rainy", "stormy"}).            // add a warning message
 		Errorf("error: This is an error").
+		Trace("a trace").
 		Info("an info").
 		Emergencyf("an emergency").
 		Errorf("another error").
-		Warningf("another warning")
-
-	lm.Log()
-
-	fmt.Println(lm.OutputWithMaxSeverity(logthing.SeverityError))
+		Warningf("another warning").
+		Log()
 
 	logthing.Close()
 }
