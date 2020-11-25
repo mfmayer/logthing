@@ -133,8 +133,8 @@ func (ld *logDispatcher) writeLogMessages(logMessages []*logMsg) {
 
 // printLogMsg formats and prints the log message
 func printLogMsg(calldepth int, msg *logMsg) {
-	output := msg.Output()
-	if len(output) > 0 && config.printSeverity(msg.Severity()) {
+	output := msg.OutputAccordingPrintMaxSeverity()
+	if len(output) > 0 && config.meetsPrintSeverity(msg.Severity()) {
 		var lg *log.Logger
 		if msg.severity < SeverityNotApplied {
 			lg = *loggers[msg.severity]

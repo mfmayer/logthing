@@ -113,7 +113,7 @@ func init() {
 			flag = 0
 		}
 		*loggers[severityLevel] = log.New(writer, prefix, flag)
-		if !config.printSeverity(severityLevel) {
+		if !config.meetsPrintSeverity(severityLevel) {
 			(*loggers[severityLevel]).SetOutput(ioutil.Discard)
 		}
 	}

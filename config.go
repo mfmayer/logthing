@@ -22,7 +22,7 @@ var config configStruct = configStruct{
 	printOutputProperties: map[string]struct{}{},
 }
 
-func (c configStruct) printSeverity(severity Severity) bool {
+func (c configStruct) meetsPrintSeverity(severity Severity) bool {
 	return severity <= config.printMaxSeverity && config.printMaxSeverity != SeverityNotApplied
 }
 
