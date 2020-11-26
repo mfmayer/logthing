@@ -185,11 +185,10 @@ func (ld *logDispatcher) log(calldepth int, logMessage LogMsg) error {
 	msg.SetSeverity(SeverityTrace)
 
 	// Drop message if severity is greater than configured logSeverity and according logType is not explicitely whitelisted
-	if msg.severity > config.logMaxSeverity {
-		if len(msg.logMessageType) > 0 {
-			if !config.isWhitelisted(msg.logMessageType) {
-				return ErrSeverityAboveMax
-			}
+	whitelisted := config.isWhitelisted(msg.logMessageType)
+	if !config.meetsLogMaxSeverity(msg.Severity()) {
+		if !whitelisted {
+			return ErrSeverityAboveMax
 		}
 	}
 
@@ -207,7 +206,9 @@ func (ld *logDispatcher) log(calldepth int, logMessage LogMsg) error {
 	}
 
 	// Print msg to stdout/stderr
-	printLogMsg(calldepth+1, msg)
+	if whitelisted || config.meetsPrintMaxSeverity(msg.Severity()) {
+		printLogMsg(calldepth+1, msg)
+	}
 
 	// Also make msg output part of its properties
 	msg.SetProperty("output", msg.output)

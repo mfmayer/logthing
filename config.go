@@ -10,6 +10,7 @@ type configStruct struct {
 	logName               string
 	logMaxSeverity        Severity
 	whitelistLogTypes     map[string]struct{}
+	printMaxSeverity      Severity
 	printOutputProperties map[string]struct{}
 }
 
@@ -17,7 +18,12 @@ var config configStruct = configStruct{
 	logName:               os.Getenv("LOGTHING_LOG_NAME"),
 	logMaxSeverity:        SeverityTrace,
 	whitelistLogTypes:     map[string]struct{}{},
+	printMaxSeverity:      SeverityError,
 	printOutputProperties: map[string]struct{}{},
+}
+
+func (c configStruct) meetsPrintMaxSeverity(severity Severity) bool {
+	return severity <= config.printMaxSeverity && config.printMaxSeverity != SeverityNotApplied
 }
 
 func (c configStruct) meetsLogMaxSeverity(severity Severity) bool {
@@ -25,7 +31,10 @@ func (c configStruct) meetsLogMaxSeverity(severity Severity) bool {
 }
 
 func (c configStruct) isWhitelisted(logType string) bool {
-	_, whitelisted := c.whitelistLogTypes[logType]
+	whitelisted := false
+	if len(logType) > 0 {
+		_, whitelisted = c.whitelistLogTypes[logType]
+	}
 	return whitelisted
 }
 
@@ -39,6 +48,9 @@ func initConfig() {
 	if logMaxSeverity, err := strconv.Atoi(os.Getenv("LOGTHING_LOG_MAX_SEVERITY")); err == nil {
 		config.logMaxSeverity = Severity(logMaxSeverity)
 	}
+	if printMaxSeverity, err := strconv.Atoi(os.Getenv("LOGTHING_PRINT_MAX_SEVERITY")); err == nil {
+		config.printMaxSeverity = Severity(printMaxSeverity)
+	}
 	config.whitelistLogTypes = stringSetFromSlice(strings.Split(os.Getenv("LOGTHING_WHITELIST_LOG_TYPES"), ","))
 	config.printOutputProperties = stringSetFromSlice(strings.Split(os.Getenv("LOGTHING_PRINT_PROPERTIES"), ","))
 }
@@ -51,6 +63,11 @@ func ConfigLogName() string {
 // ConfigLogMaxSeverity returns configured max severity for which log messages will be written (LOGTHING_LOG_MAX_SEVERITY)
 func ConfigLogMaxSeverity() Severity {
 	return config.logMaxSeverity
+}
+
+// ConfigPrintMaxSeverity returns configure max severity for which log messages will be printed to stdout/stderr (LOGTHING_PRINT_MAX_SEVERITY)
+func ConfigPrintMaxSeverity() Severity {
+	return config.printMaxSeverity
 }
 
 // ConfigWhiteListLogTypes returns list of whitelisted log types (LOGTHING_WHITELIST_LOG_TYPES)

@@ -308,7 +308,7 @@ func (lm *logMsg) appendOutput(calldepth int, severity Severity, values ...inter
 	if len(values) <= 0 {
 		return lm
 	}
-	if !config.meetsLogMaxSeverity(severity) && !config.isWhitelisted(lm.logMessageType) {
+	if !config.meetsPrintMaxSeverity(severity) && !config.isWhitelisted(lm.logMessageType) {
 		return lm
 	}
 	_, file, line, ok := runtime.Caller(calldepth)
