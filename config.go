@@ -10,6 +10,7 @@ type configStruct struct {
 	logName               string
 	logMaxSeverity        Severity
 	whitelistLogTypes     map[string]struct{}
+	whitelistProperties   map[string]struct{}
 	printMaxSeverity      Severity
 	printOutputProperties map[string]struct{}
 }
@@ -18,6 +19,7 @@ var config configStruct = configStruct{
 	logName:               os.Getenv("LOGTHING_LOG_NAME"),
 	logMaxSeverity:        SeverityTrace,
 	whitelistLogTypes:     map[string]struct{}{},
+	whitelistProperties:   map[string]struct{}{},
 	printMaxSeverity:      SeverityError,
 	printOutputProperties: map[string]struct{}{},
 }
@@ -28,6 +30,19 @@ func (c configStruct) meetsPrintMaxSeverity(severity Severity) bool {
 
 func (c configStruct) meetsLogMaxSeverity(severity Severity) bool {
 	return severity <= config.logMaxSeverity && config.logMaxSeverity != SeverityNotApplied
+}
+
+func (c configStruct) isWhitelistedProperty(key string) bool {
+	if len(c.whitelistProperties) == 0 {
+		return true
+	}
+	if key == "output" {
+		return true
+	}
+	if _, ok := c.whitelistProperties[key]; ok {
+		return true
+	}
+	return false
 }
 
 func (c configStruct) isWhitelisted(logType string) bool {
@@ -51,6 +66,7 @@ func initConfig() {
 	if printMaxSeverity, err := strconv.Atoi(os.Getenv("LOGTHING_PRINT_MAX_SEVERITY")); err == nil {
 		config.printMaxSeverity = Severity(printMaxSeverity)
 	}
+	config.whitelistProperties = stringSetFromSlice(strings.Split(os.Getenv("LOGTHING_WHITELIST_PROPERTIES"), ","))
 	config.whitelistLogTypes = stringSetFromSlice(strings.Split(os.Getenv("LOGTHING_WHITELIST_LOG_TYPES"), ","))
 	config.printOutputProperties = stringSetFromSlice(strings.Split(os.Getenv("LOGTHING_PRINT_PROPERTIES"), ","))
 }

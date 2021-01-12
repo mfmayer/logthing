@@ -89,7 +89,9 @@ func unwrappedErrorStrings(err error) []string {
 func stringSetFromSlice(slice []string) (set map[string]struct{}) {
 	set = map[string]struct{}{}
 	for _, entry := range slice {
-		set[entry] = struct{}{}
+		if entry != "" {
+			set[entry] = struct{}{}
+		}
 	}
 	return set
 }

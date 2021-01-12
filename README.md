@@ -1,4 +1,4 @@
-# logthing [![GoDoc](https://godoc.org/github.com/mfmayer/logthing?status.svg)](https://godoc.org/github.com/mfmayer/logthing) [![license](http://img.shields.io/badge/license-MIT-green.svg?style=flat)](https://raw.githubusercontent.com/mfmayer/logthing/master/LICENSE)
+# logthing [![GoDoc](https://godoc.org/github.com/mfmayer/logthing?status.svg)](https://godoc.org/github.com/mfmayer/logthing) [![license](https://img.shields.io/badge/license-MIT-green.svg?style=flat)](https://raw.githubusercontent.com/mfmayer/logthing/master/LICENSE)
 
 Just another logging module that supports logging of structured Json protocol messages. The main feature is the ability to send log messages and metrics to cloud services such as Azure Monitor (Azure Log Analytics Workspaces) and Elasticsearch. By implementing the LogWriters interface it can be extended to log to additional log stores.
 
@@ -65,10 +65,11 @@ Since logthing is meant for service logging and also credentials must be somehow
 | LOGTHING_WHITELIST_LOG_TYPES      | Messages that match any whitelisted log type (comma separated) are logged independent of their severity     |
 | LOGTHING_PRINT_MAX_SEVERITY       | Messages with severity <= LOG_OUTPUT_SEVERITY_MAX are directly printed to stdout / stderr                   |
 | LOGTHING_PRINT_PROPERTIES         | Message properties that match any give print property (comma separated) are printed with the message output |
+| LOGTHING_WHITELIST_PROPERTIES     | If stated (not empty), only whitelisted properties will be logged                                           |
 
 #### Azure Montior
 
-For the Azure Monitor writer additional environment variables must be set (for details how the used API is working see: https://docs.microsoft.com/de-de/azure/azure-monitor/platform/data-collector-api):
+For the Azure Monitor writer additional environment variables must be set (for details how the used API is working see: <https://docs.microsoft.com/de-de/azure/azure-monitor/platform/data-collector-api>):
 
 | Environment Variable          | Description                                   |
 | ----------------------------- | --------------------------------------------- |

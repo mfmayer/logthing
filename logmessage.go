@@ -154,9 +154,11 @@ func (lm *logMsg) Timestamp() time.Time {
 // SetProperty allows to add any structured information to the log message that can be marshalled to JSON
 // NOTE: keys "timestamp", "type", "severtiy", "trackingID", "output" are reserved keys and will be overwritten eventually
 func (lm *logMsg) SetProperty(key string, value interface{}) LogMsg {
-	lmp := lm.Properties()
-	if lmp != nil {
-		lmp[key] = value
+	if config.isWhitelistedProperty(key) {
+		lmp := lm.Properties()
+		if lmp != nil {
+			lmp[key] = value
+		}
 	}
 	return lm
 }
@@ -177,11 +179,7 @@ func (sp sProp) MarshalJSON() (ret []byte, err error) {
 
 // SetSProperty like SetProperty but will stringify the value
 func (lm *logMsg) SetSProperty(key string, value interface{}) LogMsg {
-	lmp := lm.Properties()
-	if lmp != nil {
-		lmp[key] = sProp{value: value}
-	}
-	return lm
+	return lm.SetProperty(key, sProp{value: value})
 }
 
 // Property returns value with given key. If the value isn't found, nil is returned
