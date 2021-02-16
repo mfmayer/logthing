@@ -154,10 +154,12 @@ func (lm *logMsg) Timestamp() time.Time {
 // SetProperty allows to add any structured information to the log message that can be marshalled to JSON
 // NOTE: keys "timestamp", "type", "severtiy", "trackingID", "output" are reserved keys and will be overwritten eventually
 func (lm *logMsg) SetProperty(key string, value interface{}) LogMsg {
-	if config.isWhitelistedProperty(key) {
-		lmp := lm.Properties()
-		if lmp != nil {
-			lmp[key] = value
+	if lm != nil {
+		if config.isWhitelistedProperty(key) {
+			lmp := lm.Properties()
+			if lmp != nil {
+				lmp[key] = value
+			}
 		}
 	}
 	return lm
@@ -184,10 +186,12 @@ func (lm *logMsg) SetSProperty(key string, value interface{}) LogMsg {
 
 // Property returns value with given key. If the value isn't found, nil is returned
 func (lm *logMsg) Property(key string) interface{} {
-	lmp := lm.Properties()
-	if lmp != nil {
-		if value, ok := lmp[key]; ok {
-			return value
+	if lm != nil {
+		lmp := lm.Properties()
+		if lmp != nil {
+			if value, ok := lmp[key]; ok {
+				return value
+			}
 		}
 	}
 	return nil
