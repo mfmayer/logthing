@@ -31,6 +31,16 @@ const (
 	SeverityAlert Severity = 1
 	// SeverityEmergency Severity level for emergency log entries
 	SeverityEmergency Severity = 0
+	// PropertyTimestamp contains message timestamp
+	PropertyTimestamp = "timestamp"
+	// PropertyType contains message type
+	PropertyType = "type"
+	// PropertySevertiy contains message severity
+	PropertySeverity = "severity"
+	// PropertyTrackingID contains tracking ID
+	PropertyTrackingID = "trackingID"
+	// PropertyOutput contains message output
+	PropertyOutput = "output"
 )
 
 // logMsg type consists of multiple log entries

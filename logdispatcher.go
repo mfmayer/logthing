@@ -198,11 +198,11 @@ func (ld *logDispatcher) log(calldepth int, logMessage LogMsg) error {
 	}
 
 	// Ensure that msg properties are complete, because only the properties will be marshalled and logged
-	msg.SetProperty("type", msg.logMessageType)
-	msg.SetProperty("timestamp", msg.timestamp)
-	msg.SetProperty("severity", msg.severity)
+	msg.SetProperty(PropertyType, msg.logMessageType)
+	msg.SetProperty(PropertyTimestamp, msg.timestamp)
+	msg.SetProperty(PropertySeverity, msg.severity)
 	if msg.trackingID != "" {
-		msg.SetProperty("trackingID", msg.trackingID)
+		msg.SetProperty(PropertyTrackingID, msg.trackingID)
 	}
 
 	// Print msg to stdout/stderr
