@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/mfmayer/logthing/logwriter"
@@ -18,7 +19,7 @@ type dispatcherOptions struct {
 	dispatchInterval time.Duration
 	queueSize        int
 	dispatchCallback func(msg LogMsg)
-	overflowCallback func(droppedMsg LogMsg, overflowCount uint)
+	overflowCallback func(droppedMsg LogMsg, overflowCount uint64)
 }
 
 // logDispatcher can be created using newLogDispatcher and can be used to write log messages to various cloud logging services
@@ -30,10 +31,11 @@ type dispatcherOptions struct {
 // Currently dispatcher is created by the logthing module and can be configuresd via environment variables.
 // Therefore only a single one is supported and it's unclear whether it makes sense to have multiple dispatchers.
 type logDispatcher struct {
-	options      dispatcherOptions
-	logMessageCh chan *logMsg
-	logWriters   []logwriter.LogWriter
-	done         chan bool
+	options         dispatcherOptions
+	logMessageCh    chan *logMsg
+	logWriters      []logwriter.LogWriter
+	done            chan bool
+	overflowCounter uint64
 }
 
 // NewLogDispatcher returns a new LogDispatcher
@@ -237,8 +239,9 @@ func (ld *logDispatcher) log(calldepth int, logMessage LogMsg) error {
 	select {
 	case ld.logMessageCh <- msg:
 	default:
+		overflowCount := atomic.AddUint64(&ld.overflowCounter, 1)
 		if ld.options.overflowCallback != nil {
-			ld.options.overflowCallback(msg, 0)
+			ld.options.overflowCallback(msg, overflowCount)
 		}
 		return ErrChannelFull
 	}

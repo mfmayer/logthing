@@ -134,7 +134,7 @@ func WithDispatchCallback(callback func(LogMsg)) func(*dispatcherOptions) {
 }
 
 // WithOverflowCallback sets function that is called back when message queue is overflown and message got dropped
-func WithOverflowCallback(callback func(LogMsg, uint)) func(*dispatcherOptions) {
+func WithOverflowCallback(callback func(LogMsg, uint64)) func(*dispatcherOptions) {
 	return func(opt *dispatcherOptions) {
 		opt.overflowCallback = callback
 	}
