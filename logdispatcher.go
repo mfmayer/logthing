@@ -14,6 +14,13 @@ import (
 	"github.com/mfmayer/logthing/logwriter"
 )
 
+type dispatcherOptions struct {
+	dispatchInterval time.Duration
+	queueSize        int
+	dispatchCallback func(msg LogMsg)
+	overflowCallback func(droppedMsg LogMsg, overflowCount uint)
+}
+
 // logDispatcher can be created using newLogDispatcher and can be used to write log messages to various cloud logging services
 // with appropriate log writers like Azure Monitor (Azure Log Analytics) and/or ElasticSearch.
 // By implementing own LogWriter interface additional services can be added.
@@ -23,15 +30,25 @@ import (
 // Currently dispatcher is created by the logthing module and can be configuresd via environment variables.
 // Therefore only a single one is supported and it's unclear whether it makes sense to have multiple dispatchers.
 type logDispatcher struct {
+	options      dispatcherOptions
 	logMessageCh chan *logMsg
 	logWriters   []logwriter.LogWriter
 	done         chan bool
 }
 
 // NewLogDispatcher returns a new LogDispatcher
-func newLogDispatcher(logWriters []logwriter.LogWriter) (ld *logDispatcher, err error) {
+func newLogDispatcher(logWriters []logwriter.LogWriter, opts ...func(*dispatcherOptions)) (ld *logDispatcher, err error) {
+	options := dispatcherOptions{
+		dispatchInterval: 5 * time.Second,
+		queueSize:        8192,
+	}
+	for _, opt := range opts {
+		opt(&options)
+	}
+
 	ld = &logDispatcher{
-		logMessageCh: make(chan *logMsg, 4096),
+		options:      options,
+		logMessageCh: make(chan *logMsg, options.queueSize),
 		done:         make(chan bool),
 	}
 	lwConfig := logwriter.Config{
@@ -47,11 +64,11 @@ func newLogDispatcher(logWriters []logwriter.LogWriter) (ld *logDispatcher, err 
 		}
 	}
 	if len(lwInitErrors) > 0 {
-		err = fmt.Errorf("Init of writers failed: %v", lwInitErrors)
+		err = fmt.Errorf("init of writers failed: %v", lwInitErrors)
 	}
 
 	go func(ld *logDispatcher) {
-		ticker := time.NewTicker(5 * time.Second)
+		ticker := time.NewTicker(options.dispatchInterval)
 		var logMessages []*logMsg
 		for {
 			select {
@@ -176,6 +193,10 @@ func printLogMsg(calldepth int, msg *logMsg) {
 
 // log prints the log message and queues it to be written
 func (ld *logDispatcher) log(calldepth int, logMessage LogMsg) error {
+	if ld.options.dispatchCallback != nil {
+		ld.options.dispatchCallback(logMessage)
+	}
+
 	msg, ok := logMessage.(*logMsg)
 	if !ok {
 		return ErrWrongMessageType
@@ -216,6 +237,9 @@ func (ld *logDispatcher) log(calldepth int, logMessage LogMsg) error {
 	select {
 	case ld.logMessageCh <- msg:
 	default:
+		if ld.options.overflowCallback != nil {
+			ld.options.overflowCallback(msg, 0)
+		}
 		return ErrChannelFull
 	}
 	return nil

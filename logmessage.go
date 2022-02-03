@@ -45,6 +45,7 @@ const (
 
 // logMsg type consists of multiple log entries
 type logMsg struct {
+	self           LogMsg
 	timestamp      UTCTime
 	logMessageType string
 	severity       Severity
@@ -89,18 +90,33 @@ type LogMsg interface {
 	Log() error                                                   // is a convenience function for Log(LogMessage) / LogMsgWithCalldepth(calldepth, LogMessage)
 }
 
-// NewLogMsg creates new log message and sets the given type
-func NewLogMsg(messageType string) LogMsg {
+type Option func(*logMsg)
+
+// WithCustomInterface sets custom LogMsg interface that is returend by LogMsg interface methods that support chain calls
+func WithCustomInterface(i LogMsg) Option {
+	return func(msg *logMsg) {
+		if i != nil {
+			msg.self = i
+		}
+	}
+}
+
+// NewLogMsg creates new log message and sets the given type and options
+func NewLogMsg(messageType string, options ...Option) LogMsg {
 	msg := &logMsg{
 		logMessageType: messageType,
 		severity:       SeverityTrace,
+	}
+	msg.self = msg
+	for _, opt := range options {
+		opt(msg)
 	}
 	return msg
 }
 
 // Log is a convenience function for LogMsg(LogMessage)
 func (lm *logMsg) Log() error {
-	return LogMsgWithCalldepth(2, lm)
+	return LogMsgWithCalldepth(2, lm.self)
 }
 
 // Type returns log message type
@@ -118,7 +134,7 @@ func (lm *logMsg) SetSeverity(severity Severity) LogMsg {
 			lm.severity = severity
 		}
 	}
-	return lm
+	return lm.self
 }
 
 // Severity returns log message severity level
@@ -134,7 +150,7 @@ func (lm *logMsg) SetTrackingID(trackingID string) LogMsg {
 	if lm != nil {
 		lm.trackingID = trackingID
 	}
-	return lm
+	return lm.self
 }
 
 // TrackingID returns log message tracking ID
@@ -150,7 +166,7 @@ func (lm *logMsg) SetTimestamp(timestamp time.Time) LogMsg {
 	if lm != nil {
 		lm.timestamp = UTCTime(timestamp)
 	}
-	return lm
+	return lm.self
 }
 
 // Timestamp returns log message timestamp
@@ -172,7 +188,7 @@ func (lm *logMsg) SetProperty(key string, value interface{}) LogMsg {
 			}
 		}
 	}
-	return lm
+	return lm.self
 }
 
 // SProp stringifies the sutrucuterd property data before dispatching it to the log writers.
@@ -312,16 +328,19 @@ func (lm *logMsg) AppendOutput(severity Severity, output ...interface{}) LogMsg 
 	return lm.appendOutput(2, severity, output...)
 }
 
-func (lm *logMsg) appendOutput(calldepth int, severity Severity, values ...interface{}) *logMsg {
-	if lm == nil || len(values) <= 0 {
+func (lm *logMsg) appendOutput(calldepth int, severity Severity, values ...interface{}) LogMsg {
+	if lm == nil {
 		return lm
+	}
+	if len(values) <= 0 {
+		return lm.self
 	}
 	lm.SetSeverity(severity)
 	if len(values) <= 0 {
-		return lm
+		return lm.self
 	}
 	if !config.meetsPrintMaxSeverity(severity) && !config.isWhitelisted(lm.logMessageType) {
-		return lm
+		return lm.self
 	}
 	_, file, line, ok := runtime.Caller(calldepth)
 	if !ok {
@@ -343,5 +362,5 @@ func (lm *logMsg) appendOutput(calldepth int, severity Severity, values ...inter
 			lm.output = append(lm.output, "  "+outputLine)
 		}
 	}
-	return lm
+	return lm.self
 }

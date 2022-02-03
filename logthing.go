@@ -64,13 +64,13 @@ var (
 
 var (
 	// ErrNotInitialized is returned when the dispatcher hasn't been initialized
-	ErrNotInitialized error = errors.New("Dispatcher not initialized")
+	ErrNotInitialized error = errors.New("dispatcher not initialized")
 	// ErrSeverityAboveMax is returned when the message's severity is above the max severity level. See LOGTHING_LOG_MAX_SEVERITY
 	ErrSeverityAboveMax error = errors.New("LogMessage severity level above LOGTHING_LOG_MAX_SEVERITY")
 	// ErrWrongMessageType is returned whe the log message is of wrong type. Ensure that LogMessage has been created by calling NewLogMsg()
 	ErrWrongMessageType error = errors.New("LogMessage is of wrong type")
 	// ErrChannelFull is returned when there is no empty space in the LogMessage queue
-	ErrChannelFull error = errors.New("Channel full")
+	ErrChannelFull error = errors.New("channel full")
 )
 
 func unwrappedErrorStrings(err error) []string {
@@ -126,13 +126,41 @@ func getLogPrefix(severity Severity) string {
 	return logPrefixes[SeverityNotApplied]
 }
 
+// WithDispatchCallback sets function that is called back before messages are dispatched
+func WithDispatchCallback(callback func(LogMsg)) func(*dispatcherOptions) {
+	return func(opt *dispatcherOptions) {
+		opt.dispatchCallback = callback
+	}
+}
+
+// WithOverflowCallback sets function that is called back when message queue is overflown and message got dropped
+func WithOverflowCallback(callback func(LogMsg, uint)) func(*dispatcherOptions) {
+	return func(opt *dispatcherOptions) {
+		opt.overflowCallback = callback
+	}
+}
+
+// WithDispatchInterval sets interval for how long messages that shall be dispatched are queued before (default 5 seconds)
+func WithDispatchInterval(interval time.Duration) func(*dispatcherOptions) {
+	return func(opt *dispatcherOptions) {
+		opt.dispatchInterval = interval
+	}
+}
+
+// WithQueueSize sets queue size how many messsages can be buffered within a dispatch interval (default 8192)
+func WithQueueSize(size int) func(*dispatcherOptions) {
+	return func(opt *dispatcherOptions) {
+		opt.queueSize = size
+	}
+}
+
 // InitDispatcher to init logthing log message dispatcher with given writers.
 // When logthing isn't needed anymore (e.g. when the application exits) Close() must be called.
-func InitDispatcher(logWriters []logwriter.LogWriter) (err error) {
+func InitDispatcher(logWriters []logwriter.LogWriter, opts ...func(*dispatcherOptions)) (err error) {
 	if ld != nil {
 		ld.close()
 	}
-	ld, err = newLogDispatcher(logWriters)
+	ld, err = newLogDispatcher(logWriters, opts...)
 	return
 }
 
