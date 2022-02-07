@@ -88,6 +88,7 @@ type LogMsg interface {
 	Emergencyf(format string, v ...interface{}) LogMsg            // appends output data to be printed and implicitly sets appropriate severity level
 	AppendOutput(severity Severity, output ...interface{}) LogMsg // appends information to be printed and sets given severity level
 	Log() error                                                   // is a convenience function for Log(LogMessage) / LogMsgWithCalldepth(calldepth, LogMessage)
+	msgData() *logMsg
 }
 
 type Option func(*logMsg)
@@ -112,6 +113,10 @@ func NewLogMsg(messageType string, options ...Option) LogMsg {
 		opt(msg)
 	}
 	return msg
+}
+
+func (lm *logMsg) msgData() *logMsg {
+	return lm
 }
 
 // Log is a convenience function for LogMsg(LogMessage)

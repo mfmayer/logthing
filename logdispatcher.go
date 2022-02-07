@@ -196,10 +196,11 @@ func (ld *logDispatcher) log(calldepth int, logMessage LogMsg) error {
 		ld.options.dispatchCallback(logMessage)
 	}
 
-	msg, ok := logMessage.(*logMsg)
-	if !ok {
-		return ErrWrongMessageType
-	}
+	// msg, ok := logMessage.(*logMsg)
+	// if !ok {
+	// 	return ErrWrongMessageType
+	// }
+	msg := logMessage.msgData()
 
 	// Set at least trace severity
 	msg.SetSeverity(SeverityTrace)
