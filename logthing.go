@@ -36,10 +36,10 @@ func (t UTCTime) MarshalJSON() ([]byte, error) {
 }
 
 var (
-	ld            *logDispatcher // default log dispatcher
-	loggers       = []**log.Logger{&Emergency, &Alert, &Critical, &Error, &Warning, &Notice, &Info, &Trace}
-	logPrefixes   = []string{"EMERG: ", "ALERT: ", "CRIT:  ", "ERROR: ", "WARN:  ", "NOTICE:", "INFO:  ", "TRACE: ", "N/A:   "}
-	severityNames = []string{"Emergency", "Alert", "Critical", "Error", "Warnin", "Notice", "Info", "Trace"}
+	ld          *logDispatcher // default log dispatcher
+	loggers     = []**log.Logger{&Emergency, &Alert, &Critical, &Error, &Warning, &Notice, &Info, &Trace}
+	logPrefixes = []string{"EMERG: ", "ALERT: ", "CRIT:  ", "ERROR: ", "WARN:  ", "NOTICE:", "INFO:  ", "TRACE: ", "N/A:   "}
+	// severityNames = []string{"Emergency", "Alert", "Critical", "Error", "Warnin", "Notice", "Info", "Trace"}
 	newLineSpacer = "\n       "
 )
 
@@ -73,18 +73,18 @@ var (
 	ErrChannelFull error = errors.New("channel full")
 )
 
-func unwrappedErrorStrings(err error) []string {
-	if err != nil {
-		errStrings := []string{err.Error()}
-		spaces := "  "
-		for wrappedErr := errors.Unwrap(err); wrappedErr != nil; wrappedErr = errors.Unwrap(wrappedErr) {
-			errStrings = append(errStrings, spaces+wrappedErr.Error())
-			spaces += "  "
-		}
-		return errStrings
-	}
-	return []string{}
-}
+// func unwrappedErrorStrings(err error) []string {
+// 	if err != nil {
+// 		errStrings := []string{err.Error()}
+// 		spaces := "  "
+// 		for wrappedErr := errors.Unwrap(err); wrappedErr != nil; wrappedErr = errors.Unwrap(wrappedErr) {
+// 			errStrings = append(errStrings, spaces+wrappedErr.Error())
+// 			spaces += "  "
+// 		}
+// 		return errStrings
+// 	}
+// 	return []string{}
+// }
 
 func stringSetFromSlice(slice []string) (set map[string]struct{}) {
 	set = map[string]struct{}{}
@@ -119,12 +119,12 @@ func init() {
 	}
 }
 
-func getLogPrefix(severity Severity) string {
-	if severity >= 0 && severity < SeverityNotApplied {
-		return logPrefixes[severity]
-	}
-	return logPrefixes[SeverityNotApplied]
-}
+// func getLogPrefix(severity Severity) string {
+// 	if severity >= 0 && severity < SeverityNotApplied {
+// 		return logPrefixes[severity]
+// 	}
+// 	return logPrefixes[SeverityNotApplied]
+// }
 
 // WithDispatchCallback sets function that is called back before messages are dispatched
 func WithDispatchCallback(callback func(LogMsg)) func(*dispatcherOptions) {

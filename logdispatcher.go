@@ -116,10 +116,7 @@ func (ld *logDispatcher) writeLogMessages(logMessages []*logMsg) {
 	}
 
 	sort.Slice(logMessages, func(i, j int) bool {
-		if time.Time(logMessages[i].timestamp).Before(time.Time(logMessages[j].timestamp)) {
-			return true
-		}
-		return false
+		return time.Time(logMessages[i].timestamp).Before(time.Time(logMessages[j].timestamp))
 	})
 
 	rawLogMessages := make([]json.RawMessage, len(logMessages))

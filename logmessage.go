@@ -57,7 +57,7 @@ type logMsg struct {
 // LogMsg is the interface to build up a log message with structured data and formatted text.
 // Structured data and formatted text will be dispatched to log writers. The formatted text will be also printed to stderr and stdout.
 type LogMsg interface {
-	//SetType(msgType string) LogMsg                                // sets log message type
+	//SetType(msgType string) LogMsg                              // sets log message type
 	Type() string                                                 // returns log message type
 	SetSeverity(severity Severity) LogMsg                         // sets log message severity level (only if given severity level is lower than current)
 	Severity() Severity                                           // returns log message severity level
