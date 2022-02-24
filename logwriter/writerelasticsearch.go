@@ -4,4 +4,4 @@ package logwriter
 // elasticsearchUser: os.Getenv("LOGTHING_ELASTICSEARCH_USER"),
 // elasticsearchPwd:  os.Getenv("LOGTHING_ELASTICSEARCH_PWD"),
 
-// TODO: To be implemented
+// To be implemented
