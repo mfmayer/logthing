@@ -36,7 +36,7 @@ func (c configStruct) isWhitelistedProperty(key string) bool {
 	if len(c.whitelistProperties) == 0 {
 		return true
 	}
-	if key == PropertyOutput || key == PropertyTimestamp || key == PropertyType || key == PropertySeverity {
+	if key == PropertyOutput || key == PropertyTimestamp || key == PropertyType || key == PropertySeverity || key == PropertyWhitelist {
 		return true
 	}
 	if _, ok := c.whitelistProperties[key]; ok {

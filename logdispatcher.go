@@ -206,7 +206,7 @@ func (ld *logDispatcher) log(calldepth int, logMessage LogMsg) error {
 	msg.SetSeverity(SeverityTrace)
 
 	// Drop message if severity is greater than configured logSeverity and according logType is not explicitely whitelisted
-	whitelisted := config.isWhitelisted(msg.logMessageType)
+	whitelisted := config.isWhitelisted(msg.logMessageType) || msg.whitelisted
 	if !config.meetsLogMaxSeverity(msg.Severity()) {
 		if !whitelisted {
 			return ErrSeverityAboveMax

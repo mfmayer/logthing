@@ -41,6 +41,8 @@ const (
 	PropertyTrackingID = "trackingID"
 	// PropertyOutput contains message output
 	PropertyOutput = "output"
+	// PropertyWhitelist explicitely whitelists the message
+	PropertyWhitelist = "whitelisted"
 )
 
 // logMsg type consists of multiple log entries
@@ -52,6 +54,7 @@ type logMsg struct {
 	trackingID     string
 	output         []string
 	properties     interface{} //map[string]interface{}
+	whitelisted    bool
 }
 
 // LogMsg is the interface to build up a log message with structured data and formatted text.
@@ -65,7 +68,7 @@ type LogMsg interface {
 	TrackingID() string                                           // returns log message tracking ID
 	SetTimestamp(time time.Time) LogMsg                           // sets log message timestamp
 	Timestamp() time.Time                                         // returns log message timestamp
-	SetProperty(key string, value interface{}) LogMsg             // sets property value for given key. NOTE: "timestamp", "type", "severtiy", "trackingID" and "output" are reserved keys. They do have separate set functions.
+	SetProperty(key string, value interface{}) LogMsg             // sets property value for given key. NOTE: "timestamp", "type", "severtiy", "trackingID", "output" and "whitelisted" are reserved keys. They do have separate set functions.
 	SetSProperty(key string, value interface{}) LogMsg            // like SetProperty but stringifies the value will be stringified
 	Property(key string) interface{}                              // returns value with given key. If the value isn't found, ok will be false.
 	Properties() map[string]interface{}                           // returns property map
@@ -102,11 +105,20 @@ func WithCustomInterface(i LogMsg) Option {
 	}
 }
 
+// WithWhitelistFlag explicitely whitelists the message with all properties and output messages to be logged.
+func WithWhitelistFlag() Option {
+	return func(msg *logMsg) {
+		msg.whitelisted = true
+		msg.SetProperty(PropertyWhitelist, msg.whitelisted)
+	}
+}
+
 // NewLogMsg creates new log message and sets the given type and options
 func NewLogMsg(messageType string, options ...Option) LogMsg {
 	msg := &logMsg{
 		logMessageType: messageType,
 		severity:       SeverityTrace,
+		whitelisted:    false,
 	}
 	msg.self = msg
 	for _, opt := range options {
@@ -186,7 +198,7 @@ func (lm *logMsg) Timestamp() time.Time {
 // NOTE: keys "timestamp", "type", "severtiy", "trackingID", "output" are reserved keys and will be overwritten eventually
 func (lm *logMsg) SetProperty(key string, value interface{}) LogMsg {
 	if lm != nil {
-		if config.isWhitelistedProperty(key) {
+		if config.isWhitelistedProperty(key) || lm.whitelisted {
 			lmp := lm.Properties()
 			if lmp != nil {
 				lmp[key] = value
@@ -344,7 +356,7 @@ func (lm *logMsg) appendOutput(calldepth int, severity Severity, values ...inter
 	if len(values) <= 0 {
 		return lm.self
 	}
-	if !config.meetsPrintMaxSeverity(severity) && !config.isWhitelisted(lm.logMessageType) {
+	if !config.meetsPrintMaxSeverity(severity) && !config.isWhitelisted(lm.logMessageType) && !lm.whitelisted {
 		return lm.self
 	}
 	_, file, line, ok := runtime.Caller(calldepth)
