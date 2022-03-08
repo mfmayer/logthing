@@ -154,6 +154,13 @@ func WithQueueSize(size int) func(*dispatcherOptions) {
 	}
 }
 
+// WithSetDebugEntryID enables that for every log message an individual entry ID is set (counter that is atomically incremented)
+func WithSetDebugEntryID() func(*dispatcherOptions) {
+	return func(opt *dispatcherOptions) {
+		opt.setDebugEntryID = true
+	}
+}
+
 // InitDispatcher to init logthing log message dispatcher with given writers.
 // When logthing isn't needed anymore (e.g. when the application exits) Close() must be called.
 func InitDispatcher(logWriters []logwriter.LogWriter, opts ...func(*dispatcherOptions)) (err error) {

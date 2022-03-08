@@ -20,6 +20,7 @@ type dispatcherOptions struct {
 	queueSize        int
 	dispatchCallback func(msg LogMsg)
 	overflowCallback func(droppedMsg LogMsg, overflowCount uint64)
+	setDebugEntryID  bool
 }
 
 // logDispatcher can be created using newLogDispatcher and can be used to write log messages to various cloud logging services
@@ -31,11 +32,12 @@ type dispatcherOptions struct {
 // Currently dispatcher is created by the logthing module and can be configuresd via environment variables.
 // Therefore only a single one is supported and it's unclear whether it makes sense to have multiple dispatchers.
 type logDispatcher struct {
-	options         dispatcherOptions
-	logMessageCh    chan *logMsg
-	logWriters      []logwriter.LogWriter
-	done            chan bool
-	overflowCounter uint64
+	options           dispatcherOptions
+	logMessageCh      chan *logMsg
+	logWriters        []logwriter.LogWriter
+	done              chan bool
+	overflowCounter   uint64
+	logEntryIDCounter uint64
 }
 
 // NewLogDispatcher returns a new LogDispatcher
@@ -233,6 +235,11 @@ func (ld *logDispatcher) log(calldepth int, logMessage LogMsg) error {
 
 	// Also make msg output part of its properties
 	msg.SetProperty("output", msg.output)
+
+	// Set log entry debug id to debug for duplicate entries
+	if ld.options.setDebugEntryID {
+		msg.SetProperty("logthing_debug_logEntryID", atomic.AddUint64(&ld.logEntryIDCounter, 1))
+	}
 
 	select {
 	case ld.logMessageCh <- msg:
