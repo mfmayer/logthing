@@ -239,7 +239,7 @@ func (ld *logDispatcher) log(calldepth int, logMessage LogMsg) error {
 
 	// Set log entry id
 	if ld.options.setEntryID {
-		msg.SetProperty("logthing_logEntryID", atomic.AddUint64(&ld.logEntryIDCounter, 1))
+		msg.SetProperty("logEntryID", atomic.AddUint64(&ld.logEntryIDCounter, 1))
 	}
 
 	// Set static propertise
