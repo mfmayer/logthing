@@ -154,10 +154,20 @@ func WithQueueSize(size int) func(*dispatcherOptions) {
 	}
 }
 
-// WithSetDebugEntryID enables that for every log message an individual entry ID is set (counter that is atomically incremented)
-func WithSetDebugEntryID() func(*dispatcherOptions) {
+// WithSetLogEntryID enables that for every log message an individual "logEntryID" property is set (counter that is atomically incremented)
+func WithSetLogEntryID() func(*dispatcherOptions) {
 	return func(opt *dispatcherOptions) {
-		opt.setDebugEntryID = true
+		opt.setEntryID = true
+	}
+}
+
+// WithSetStaticProperties enables that for every log message all given static properties are set
+func WithSetStaticProperties(staticProperties map[string]interface{}) func(*dispatcherOptions) {
+	return func(opt *dispatcherOptions) {
+		opt.staticProperties = map[string]interface{}{}
+		for k, v := range staticProperties {
+			opt.staticProperties[k] = v
+		}
 	}
 }
 

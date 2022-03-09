@@ -20,7 +20,8 @@ type dispatcherOptions struct {
 	queueSize        int
 	dispatchCallback func(msg LogMsg)
 	overflowCallback func(droppedMsg LogMsg, overflowCount uint64)
-	setDebugEntryID  bool
+	setEntryID       bool
+	staticProperties map[string]interface{}
 }
 
 // logDispatcher can be created using newLogDispatcher and can be used to write log messages to various cloud logging services
@@ -236,9 +237,16 @@ func (ld *logDispatcher) log(calldepth int, logMessage LogMsg) error {
 	// Also make msg output part of its properties
 	msg.SetProperty("output", msg.output)
 
-	// Set log entry debug id to debug for duplicate entries
-	if ld.options.setDebugEntryID {
-		msg.SetProperty("logthing_debug_logEntryID", atomic.AddUint64(&ld.logEntryIDCounter, 1))
+	// Set log entry id
+	if ld.options.setEntryID {
+		msg.SetProperty("logthing_logEntryID", atomic.AddUint64(&ld.logEntryIDCounter, 1))
+	}
+
+	// Set static propertise
+	if ld.options.staticProperties != nil {
+		for k, v := range ld.options.staticProperties {
+			msg.SetProperty(k, v)
+		}
 	}
 
 	select {

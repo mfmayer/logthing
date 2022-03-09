@@ -68,7 +68,7 @@ type LogMsg interface {
 	TrackingID() string                                           // returns log message tracking ID
 	SetTimestamp(time time.Time) LogMsg                           // sets log message timestamp
 	Timestamp() time.Time                                         // returns log message timestamp
-	SetProperty(key string, value interface{}) LogMsg             // sets property value for given key. NOTE: "timestamp", "type", "severtiy", "trackingID", "output" and "whitelisted" are reserved keys. They do have separate set functions.
+	SetProperty(key string, value interface{}) LogMsg             // sets property value for given key. NOTE: "timestamp", "type", "severtiy", "trackingID", "output", "whitelisted" and "logEntryID" are reserved keys. They do have separate set functions.
 	SetSProperty(key string, value interface{}) LogMsg            // like SetProperty but stringifies the value will be stringified
 	Property(key string) interface{}                              // returns value with given key. If the value isn't found, ok will be false.
 	Properties() map[string]interface{}                           // returns property map
