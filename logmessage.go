@@ -233,6 +233,9 @@ func (lm *logMsg) Property(key string) interface{} {
 		lmp := lm.Properties()
 		if lmp != nil {
 			if value, ok := lmp[key]; ok {
+				if sProp, ok := value.(sProp); ok {
+					return sProp.value
+				}
 				return value
 			}
 		}
