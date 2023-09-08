@@ -18,7 +18,7 @@ package logthing
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -112,7 +112,7 @@ func init() {
 		}
 		*loggers[severityLevel] = log.New(writer, prefix, flag)
 		if !config.meetsPrintMaxSeverity(severityLevel) {
-			(*loggers[severityLevel]).SetOutput(ioutil.Discard)
+			(*loggers[severityLevel]).SetOutput(io.Discard)
 			logger := log.New(writer, prefix, flag)
 			loggers[severityLevel] = &logger
 		}
