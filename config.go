@@ -55,9 +55,6 @@ func (c configStruct) isWhitelisted(logType string) bool {
 
 func initConfig() {
 	if config.logName == "" {
-		config.logName = os.Getenv("SERVICE_NAME")
-	}
-	if config.logName == "" {
 		config.logName = "default"
 	}
 	if logMaxSeverity, err := strconv.Atoi(os.Getenv("LOGTHING_LOG_MAX_SEVERITY")); err == nil {
@@ -71,7 +68,7 @@ func initConfig() {
 	config.printOutputProperties = stringSetFromSlice(strings.Split(os.Getenv("LOGTHING_PRINT_PROPERTIES"), ","))
 }
 
-// ConfigLogName returns configured log name (LOGTHING_LOG_NAME or SERVICE_NAME)
+// ConfigLogName returns configured log name (LOGTHING_LOG_NAME)
 func ConfigLogName() string {
 	return config.logName
 }

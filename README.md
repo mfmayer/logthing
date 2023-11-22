@@ -58,14 +58,14 @@ WARN:  2020/09/02 20:47:14 logthing_test.go:32: logthing_test.go:27: Hello [Mom 
 
 Since logthing is meant for service logging and also credentials must be somehow given to logthing, most of the configuration happens via environment variables:
 
-| Environment Variable              | Description                                                                                                 |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| LOGTHING_LOG_NAME or SERVICE_NAME | Log name under which log messages are stored (will be used as elasticsearch index or azure custom log type) |
-| LOGTHING_LOG_MAX_SEVERITY         | Messages with severity > LOGTHING_LOG_MAX_SEVERITY won't be logged and are immediately dropped              |
-| LOGTHING_WHITELIST_LOG_TYPES      | Messages that match any whitelisted log type (comma separated) are logged independent of their severity     |
-| LOGTHING_PRINT_MAX_SEVERITY       | Messages with severity <= LOG_OUTPUT_SEVERITY_MAX are directly printed to stdout / stderr                   |
-| LOGTHING_PRINT_PROPERTIES         | Message properties that match any give print property (comma separated) are printed with the message output |
-| LOGTHING_WHITELIST_PROPERTIES     | If stated (not empty), only whitelisted properties will be logged                                           |
+| Environment Variable          | Description                                                                                                 |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| LOGTHING_LOG_NAME             | Log name under which log messages are stored (will be used as elasticsearch index or azure custom log type) |
+| LOGTHING_LOG_MAX_SEVERITY     | Messages with severity > LOGTHING_LOG_MAX_SEVERITY won't be logged and are immediately dropped              |
+| LOGTHING_WHITELIST_LOG_TYPES  | Messages that match any whitelisted log type (comma separated) are logged independent of their severity     |
+| LOGTHING_PRINT_MAX_SEVERITY   | Messages with severity <= LOG_OUTPUT_SEVERITY_MAX are directly printed to stdout / stderr                   |
+| LOGTHING_PRINT_PROPERTIES     | Message properties that match any give print property (comma separated) are printed with the message output |
+| LOGTHING_WHITELIST_PROPERTIES | If stated (not empty), only whitelisted properties will be logged                                           |
 
 #### Azure Montior
 

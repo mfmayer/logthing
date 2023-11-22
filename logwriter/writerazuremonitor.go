@@ -35,10 +35,10 @@ type azureMonitor struct {
 // with the default azureMonitorDomain: "ods.opinsights.azure.com"
 //
 // The following environemnt variables are used be used to configure the behaviour:
-// LOGTHING_LOG_NAME or SERVICE_NAME  - Log name under which log messages are stored (will be used as elasticsearch index or azure custom log type)
-// LOGTHING_AZURE_WORKSPACE_ID        - Azure log analytics workspace id
-// LOGTHING_AZURE_WORKSPACE_KEY       - Azure log analytics worksoace key
-// LOGTHING_AZURE_MONITOR_DOMAIN 		  - (optional) to overwrite the default azure monitor domain e.g. in China
+// LOGTHING_LOG_NAME  						- Log name under which log messages are stored (will be used as elasticsearch index or azure custom log type)
+// LOGTHING_AZURE_WORKSPACE_ID    - Azure log analytics workspace id
+// LOGTHING_AZURE_WORKSPACE_KEY   - Azure log analytics worksoace key
+// LOGTHING_AZURE_MONITOR_DOMAIN 	- (optional) to overwrite the default azure monitor domain e.g. in China
 func NewAzureMonitorWriter() LogWriter {
 	azWorkspaceID := os.Getenv("LOGTHING_AZURE_WORKSPACE_ID")
 	azWorkspaceKey := os.Getenv("LOGTHING_AZURE_WORKSPACE_KEY")
@@ -78,22 +78,26 @@ func (am *azureMonitor) azCreateSignatureString(contentLength int) (signature st
 func (am *azureMonitor) Init(config Config) error {
 	am.azLogType = config.LogName
 	if am.azWorkspaceID == "" {
-		return fmt.Errorf("Envrionment variable \"LOGTHING_AZURE_WORKSPACE_ID\" must be set")
+		return fmt.Errorf("envrionment variable \"LOGTHING_AZURE_WORKSPACE_ID\" must be set")
 	}
 	if am.azKey == "" {
-		return fmt.Errorf("Environment variable \"LOGTHING_AZURE_WORKSPACE_KEY\" must be set")
+		return fmt.Errorf("environment variable \"LOGTHING_AZURE_WORKSPACE_KEY\" must be set")
 	}
 	if am.azLogType == "" {
-		return fmt.Errorf("Either environment varibale \"SERVICE_NAME\" or \"LOGTHING_LOG_NAME\" must be set")
+		return fmt.Errorf("environment varibale \"LOGTHING_LOG_NAME\" must be set")
 	}
 	if am.azDomain == "" {
-		return fmt.Errorf("Envrionment variable \"LOGTHING_AZURE_MONITOR_DOMAIN\" mustn't be empty or not set at all")
+		return fmt.Errorf("envrionment variable \"LOGTHING_AZURE_MONITOR_DOMAIN\" mustn't be empty or not set at all")
 	}
 	am.azURL = "https://" + am.azWorkspaceID + "." + am.azDomain + "/api/logs?api-version=2016-04-01"
 	return nil
 }
 
 func (am *azureMonitor) Close() {
+}
+
+func (am *azureMonitor) PropertiesSchemaChanged(schema map[string]Kind) error {
+	return nil
 }
 
 func (am *azureMonitor) WriteLogMessages(logMessages []json.RawMessage, timestamps []time.Time) error {

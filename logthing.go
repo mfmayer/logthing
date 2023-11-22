@@ -6,11 +6,11 @@
 // Besides logging to cloud services, logthing also supports to write logs to stdout and stderr simultaneously.
 //
 // The following environemnt variables can be used to configure the behaviour:
-// LOGTHING_LOG_NAME or SERVICE_NAME  - Log name under which log messages are stored (will be used as elasticsearch index or azure custom log type)
-// LOGTHING_LOG_MAX_SEVERITY          - Messages with severity > LOGTHING_LOG_MAX_SEVERITY won't be logged or printed at all and are immediately dropped
-// LOGTHING_PRINT_MAX_SEVERITY        - Messages with severity <= LOGTHING_PRINT_MAX_SEVERITY are are also printed to stdout / stderr
-// LOGTHING_WHITELIST_LOG_TYPES       - Messages that match any whitelisted log type (comma separated) are logged independently of their severity
-// LOGTHING_PRINT_PROPERTIES          - Message properties that match any give print property (comma separated) are printed with the message output
+// LOGTHING_LOG_NAME  					 - Log name under which log messages are stored (will be used as elasticsearch index or azure custom log type)
+// LOGTHING_LOG_MAX_SEVERITY     - Messages with severity > LOGTHING_LOG_MAX_SEVERITY won't be logged or printed at all and are immediately dropped
+// LOGTHING_PRINT_MAX_SEVERITY   - Messages with severity <= LOGTHING_PRINT_MAX_SEVERITY are are also printed to stdout / stderr
+// LOGTHING_WHITELIST_LOG_TYPES  - Messages that match any whitelisted log type (comma separated) are logged independently of their severity
+// LOGTHING_PRINT_PROPERTIES     - Message properties that match any give print property (comma separated) are printed with the message output
 //
 // Note: Severity increases with lower values (SeverityEmergency: 0 ... SeverityTrace: 7)
 package logthing
@@ -18,7 +18,7 @@ package logthing
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -112,7 +112,7 @@ func init() {
 		}
 		*loggers[severityLevel] = log.New(writer, prefix, flag)
 		if !config.meetsPrintMaxSeverity(severityLevel) {
-			(*loggers[severityLevel]).SetOutput(ioutil.Discard)
+			(*loggers[severityLevel]).SetOutput(io.Discard)
 			logger := log.New(writer, prefix, flag)
 			loggers[severityLevel] = &logger
 		}

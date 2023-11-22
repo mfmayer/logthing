@@ -28,11 +28,12 @@ type dispatcherOptions struct {
 // with appropriate log writers like Azure Monitor (Azure Log Analytics) and/or ElasticSearch.
 // By implementing own LogWriter interface additional services can be added.
 //
-// Must be closed when no longer needed, to ensure that all log messages have been written, user writers are closed and resources are freed
-//
 // Currently dispatcher is created by the logthing module and can be configuresd via environment variables.
 // Therefore only a single one is supported and it's unclear whether it makes sense to have multiple dispatchers.
+//
+// Must be closed when no longer needed, to ensure that all log messages have been written, user writers are closed and resources are freed.
 type logDispatcher struct {
+	schema            map[string]logwriter.Kind
 	options           dispatcherOptions
 	logMessageCh      chan *logMsg
 	logWriters        []logwriter.LogWriter
@@ -52,6 +53,7 @@ func newLogDispatcher(logWriters []logwriter.LogWriter, opts ...func(*dispatcher
 	}
 
 	ld = &logDispatcher{
+		schema:       map[string]logwriter.Kind{},
 		options:      options,
 		logMessageCh: make(chan *logMsg, options.queueSize),
 		done:         make(chan bool),
@@ -125,19 +127,52 @@ func (ld *logDispatcher) writeLogMessages(logMessages []*logMsg) {
 	rawLogMessages := make([]json.RawMessage, len(logMessages))
 	timestamps := make([]time.Time, len(logMessages))
 	j := 0
+	schemaChanged := false
 	for _, logMessage := range logMessages {
-		if rawLogMessage, err := json.Marshal(logMessage.Properties()); err != nil {
+		msgProperties := logMessage.Properties()
+		// marshal message
+		rawLogMessage, err := json.Marshal(msgProperties)
+		if err != nil {
 			Error.Printf("Error while marshalling log message: %v", err)
-		} else {
-			rawLogMessages[j] = rawLogMessage
-			timestamps[j] = logMessage.Timestamp()
-			j++
+			continue
 		}
+		// check schema
+		for propName, propValue := range msgProperties {
+			if _, ok := ld.schema[propName]; !ok {
+				kind := logwriter.Unknown
+				switch propValue.(type) {
+				case string:
+					kind = logwriter.String
+				case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+					kind = logwriter.Integer
+				case float32, float64:
+					kind = logwriter.Number
+				case bool:
+					kind = logwriter.Boolean
+				case time.Time, UTCTime:
+					kind = logwriter.DateTime
+				default:
+					kind = logwriter.Unknown
+				}
+				ld.schema[propName] = kind
+				schemaChanged = true
+			}
+		}
+		// append raw log message
+		rawLogMessages[j] = rawLogMessage
+		timestamps[j] = logMessage.Timestamp()
+		j++
 	}
 	rawLogMessages = rawLogMessages[:j]
 	timestamps = timestamps[:j]
 	for i, lw := range ld.logWriters {
 		if lw != nil {
+			if schemaChanged {
+				err := lw.PropertiesSchemaChanged(ld.schema)
+				if err != nil {
+					Error.Println(err.Error())
+				}
+			}
 			err := lw.WriteLogMessages(rawLogMessages, timestamps)
 			if err != nil {
 				Error.Printf("Error while writing log message: %v", err)
