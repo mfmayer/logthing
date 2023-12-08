@@ -94,22 +94,26 @@ type LogMsg interface {
 	msgData() *logMsg
 }
 
-type Option func(*logMsg)
+type Option func(LogMsg)
 
 // WithCustomInterface sets custom LogMsg interface that is returend by LogMsg interface methods that support chain calls
 func WithCustomInterface(i LogMsg) Option {
-	return func(msg *logMsg) {
-		if i != nil {
-			msg.self = i
+	return func(lm LogMsg) {
+		if msg, ok := lm.(*logMsg); ok {
+			if i != nil {
+				msg.self = i
+			}
 		}
 	}
 }
 
 // WithWhitelistFlag explicitely whitelists the message with all properties and output messages to be logged.
 func WithWhitelistFlag() Option {
-	return func(msg *logMsg) {
-		msg.whitelisted = true
-		msg.SetProperty(PropertyWhitelist, msg.whitelisted)
+	return func(lm LogMsg) {
+		if msg, ok := lm.(*logMsg); ok {
+			msg.whitelisted = true
+			msg.SetProperty(PropertyWhitelist, msg.whitelisted)
+		}
 	}
 }
 
