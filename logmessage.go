@@ -69,6 +69,7 @@ var NilLogMessage LogMsg = &nilLogMsg{
 // Structured data and formatted text will be dispatched to log writers. The formatted text will be also printed to stderr and stdout.
 type LogMsg interface {
 	Self() LogMsg                                                 // returns self (custom) interface. See also WithCustomInterface option for creating new Loggable with custom/extended interface
+	IsNil() bool                                                  // returns true if LogMsg is nil or NilLogMessage
 	ApplyOptions(...Option) LogMsg                                // applies options
 	Type() string                                                 // returns log message type
 	SetType(msgType string) LogMsg                                // sets log message type
@@ -155,6 +156,10 @@ func (lm *logMsg) ApplyOptions(options ...Option) LogMsg {
 		opt(lm.Self())
 	}
 	return lm.Self()
+}
+
+func (lm *logMsg) IsNil() bool {
+	return lm == nil
 }
 
 func (lm *logMsg) Self() LogMsg {

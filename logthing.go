@@ -208,6 +208,9 @@ func LogMsgWithCalldepth(calldepth int, msg LogMsg) (err error) {
 	if ld == nil {
 		return ErrNotInitialized
 	}
+	if msg == nil {
+		return
+	}
 	err = ld.log(calldepth+1, msg)
 	return
 }
