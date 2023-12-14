@@ -57,21 +57,31 @@ type logMsg struct {
 	whitelisted    bool
 }
 
+type nilLogMsg struct {
+	*logMsg
+}
+
+var NilLogMessage LogMsg = &nilLogMsg{
+	logMsg: nil,
+}
+
 // LogMsg is the interface to build up a log message with structured data and formatted text.
 // Structured data and formatted text will be dispatched to log writers. The formatted text will be also printed to stderr and stdout.
 type LogMsg interface {
-	//SetType(msgType string) LogMsg                              // sets log message type
+	Self() LogMsg                                                 // returns self (custom) interface. See also WithCustomInterface option for creating new Loggable with custom/extended interface
+	ApplyOptions(...Option) LogMsg                                // applies options
 	Type() string                                                 // returns log message type
-	SetSeverity(severity Severity) LogMsg                         // sets log message severity level (only if given severity level is lower than current)
+	SetType(msgType string) LogMsg                                // sets log message type
 	Severity() Severity                                           // returns log message severity level
-	SetTrackingID(trackingID string) LogMsg                       // sets log message tracking ID
+	SetSeverity(severity Severity) LogMsg                         // sets log message severity level (only if given severity level is lower than current)
 	TrackingID() string                                           // returns log message tracking ID
-	SetTimestamp(time time.Time) LogMsg                           // sets log message timestamp
+	SetTrackingID(trackingID string) LogMsg                       // sets log message tracking ID
 	Timestamp() time.Time                                         // returns log message timestamp
-	SetProperty(key string, value interface{}) LogMsg             // sets property value for given key. NOTE: "timestamp", "type", "severtiy", "trackingID", "output", "whitelisted" and "logEntryID" are reserved keys. They do have separate set functions.
-	SetSProperty(key string, value interface{}) LogMsg            // like SetProperty but stringifies the value will be stringified
+	SetTimestamp(time time.Time) LogMsg                           // sets log message timestamp
 	Property(key string) interface{}                              // returns value with given key. If the value isn't found, ok will be false.
 	Properties() map[string]interface{}                           // returns property map
+	SetProperty(key string, value interface{}) LogMsg             // sets property value for given key. NOTE: "timestamp", "type", "severtiy", "trackingID", "output", "whitelisted" and "logEntryID" are reserved keys. They do have separate set functions.
+	SetSProperty(key string, value interface{}) LogMsg            // like SetProperty but stringifies the value will be stringified
 	Output() []string                                             // returns output data
 	Trace(output ...interface{}) LogMsg                           // appends output data to be printed and implicitly sets appropriate severity level
 	Tracef(format string, v ...interface{}) LogMsg                // appends output data to be printed and implicitly sets appropriate severity level
@@ -90,13 +100,13 @@ type LogMsg interface {
 	Emergency(output ...interface{}) LogMsg                       // appends output data to be printed and implicitly sets appropriate severity level
 	Emergencyf(format string, v ...interface{}) LogMsg            // appends output data to be printed and implicitly sets appropriate severity level
 	AppendOutput(severity Severity, output ...interface{}) LogMsg // appends information to be printed and sets given severity level
-	Log() error                                                   // is a convenience function for Log(LogMessage) / LogMsgWithCalldepth(calldepth, LogMessage)
+	Log() error                                                   // is a convenience function for Log(Loggable) / LogMsgWithCalldepth(calldepth, LogMessage)
 	msgData() *logMsg
 }
 
 type Option func(LogMsg)
 
-// WithCustomInterface sets custom LogMsg interface that is returend by LogMsg interface methods that support chain calls
+// WithCustomInterface sets custom/extended Loggable interface that will returend by Loggable interface methods that support chain calls
 func WithCustomInterface(i LogMsg) Option {
 	return func(lm LogMsg) {
 		if msg, ok := lm.(*logMsg); ok {
@@ -125,10 +135,7 @@ func NewLogMsg(messageType string, options ...Option) LogMsg {
 		whitelisted:    false,
 	}
 	msg.self = msg
-	for _, opt := range options {
-		opt(msg)
-	}
-	return msg
+	return msg.ApplyOptions(options...)
 }
 
 func (lm *logMsg) msgData() *logMsg {
@@ -137,7 +144,31 @@ func (lm *logMsg) msgData() *logMsg {
 
 // Log is a convenience function for LogMsg(LogMessage)
 func (lm *logMsg) Log() error {
-	return LogMsgWithCalldepth(2, lm.self)
+	return LogMsgWithCalldepth(2, lm.Self())
+}
+
+func (lm *logMsg) ApplyOptions(options ...Option) LogMsg {
+	if lm == nil {
+		return lm
+	}
+	for _, opt := range options {
+		opt(lm.Self())
+	}
+	return lm.Self()
+}
+
+func (lm *logMsg) Self() LogMsg {
+	if lm == nil {
+		return lm
+	}
+	return lm.Self()
+}
+
+func (lm *logMsg) SetType(msgType string) LogMsg {
+	if lm != nil {
+		lm.logMessageType = msgType
+	}
+	return lm.Self()
 }
 
 // Type returns log message type
@@ -155,7 +186,7 @@ func (lm *logMsg) SetSeverity(severity Severity) LogMsg {
 			lm.severity = severity
 		}
 	}
-	return lm.self
+	return lm.Self()
 }
 
 // Severity returns log message severity level
@@ -171,7 +202,7 @@ func (lm *logMsg) SetTrackingID(trackingID string) LogMsg {
 	if lm != nil {
 		lm.trackingID = trackingID
 	}
-	return lm.self
+	return lm.Self()
 }
 
 // TrackingID returns log message tracking ID
@@ -187,7 +218,7 @@ func (lm *logMsg) SetTimestamp(timestamp time.Time) LogMsg {
 	if lm != nil {
 		lm.timestamp = UTCTime(timestamp)
 	}
-	return lm.self
+	return lm.Self()
 }
 
 // Timestamp returns log message timestamp
@@ -209,7 +240,7 @@ func (lm *logMsg) SetProperty(key string, value interface{}) LogMsg {
 			}
 		}
 	}
-	return lm.self
+	return lm.Self()
 }
 
 // SProp stringifies the sutrucuterd property data before dispatching it to the log writers.
@@ -352,19 +383,20 @@ func (lm *logMsg) AppendOutput(severity Severity, output ...interface{}) LogMsg 
 	return lm.appendOutput(2, severity, output...)
 }
 
-func (lm *logMsg) appendOutput(calldepth int, severity Severity, values ...interface{}) LogMsg {
+func (lm *logMsg) appendOutput(calldepth int, severity Severity, values ...interface{}) (l LogMsg) {
+	l = lm.Self()
 	if lm == nil {
-		return lm
+		return
 	}
 	if len(values) <= 0 {
-		return lm.self
+		return
 	}
 	lm.SetSeverity(severity)
 	if len(values) <= 0 {
-		return lm.self
+		return
 	}
 	if !config.meetsPrintMaxSeverity(severity) && !config.isWhitelisted(lm.logMessageType) && !lm.whitelisted {
-		return lm.self
+		return
 	}
 	_, file, line, ok := runtime.Caller(calldepth)
 	if !ok {
@@ -386,5 +418,5 @@ func (lm *logMsg) appendOutput(calldepth int, severity Severity, values ...inter
 			lm.output = append(lm.output, "  "+outputLine)
 		}
 	}
-	return lm.self
+	return
 }
