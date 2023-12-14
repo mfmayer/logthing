@@ -161,7 +161,7 @@ func (lm *logMsg) Self() LogMsg {
 	if lm == nil {
 		return lm
 	}
-	return lm.Self()
+	return lm.self
 }
 
 func (lm *logMsg) SetType(msgType string) LogMsg {
