@@ -113,8 +113,7 @@ func (de *azureDataExplorer) PropertiesSchemaChanged(schema map[string]Kind) err
 	if de.client == nil {
 		return fmt.Errorf("invalid client")
 	}
-	alterMergeTable(de.client, "logs", de.logName, schema)
-	return nil
+	return alterMergeTable(de.client, "logs", de.logName, schema)
 }
 
 func (de *azureDataExplorer) WriteLogMessages(logMessages []json.RawMessage, timestamps []time.Time) (err error) {
