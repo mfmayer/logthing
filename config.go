@@ -63,9 +63,9 @@ func initConfig() {
 	if printMaxSeverity, err := strconv.Atoi(os.Getenv("LOGTHING_PRINT_MAX_SEVERITY")); err == nil {
 		config.printMaxSeverity = Severity(printMaxSeverity)
 	}
-	config.whitelistProperties = stringSetFromSlice(strings.Split(os.Getenv("LOGTHING_WHITELIST_PROPERTIES"), ","))
-	config.whitelistLogTypes = stringSetFromSlice(strings.Split(os.Getenv("LOGTHING_WHITELIST_LOG_TYPES"), ","))
-	config.printOutputProperties = stringSetFromSlice(strings.Split(os.Getenv("LOGTHING_PRINT_PROPERTIES"), ","))
+	config.whitelistProperties = stringSetFromSlice(strings.Split(strings.TrimSpace(os.Getenv("LOGTHING_WHITELIST_PROPERTIES")), ","))
+	config.whitelistLogTypes = stringSetFromSlice(strings.Split(strings.TrimSpace(os.Getenv("LOGTHING_WHITELIST_LOG_TYPES")), ","))
+	config.printOutputProperties = stringSetFromSlice(strings.Split(strings.TrimSpace(os.Getenv("LOGTHING_PRINT_PROPERTIES")), ","))
 }
 
 // ConfigLogName returns configured log name (LOGTHING_LOG_NAME)
