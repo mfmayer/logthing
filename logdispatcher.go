@@ -250,6 +250,19 @@ func (ld *logDispatcher) log(calldepth int, logMessage LogMsg) error {
 			return ErrSeverityAboveMax
 		}
 	}
+	// Ensure that non-whitelisted properties are cleared/deleted
+	{
+		propertiesMap := msg.Properties()
+		for key, _ := range propertiesMap {
+			if msg.whitelisted {
+				continue
+			}
+			if config.isWhitelistedProperty(key) {
+				continue
+			}
+			delete(propertiesMap, key)
+		}
+	}
 
 	// Ensure that timestamp is set
 	if time.Time(msg.timestamp).IsZero() {

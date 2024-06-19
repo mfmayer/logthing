@@ -238,11 +238,9 @@ func (lm *logMsg) Timestamp() time.Time {
 // NOTE: keys "timestamp", "type", "severtiy", "trackingID", "output" are reserved keys and will be overwritten eventually
 func (lm *logMsg) SetProperty(key string, value interface{}) LogMsg {
 	if lm != nil {
-		if config.isWhitelistedProperty(key) || lm.whitelisted {
-			lmp := lm.Properties()
-			if lmp != nil {
-				lmp[key] = value
-			}
+		lmp := lm.Properties()
+		if lmp != nil {
+			lmp[key] = value
 		}
 	}
 	return lm.Self()
