@@ -4,6 +4,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/joho/godotenv"
 )
 
 type configStruct struct {
@@ -54,6 +56,8 @@ func (c configStruct) isWhitelisted(logType string) bool {
 }
 
 func initConfig() {
+	godotenv.Load()
+
 	if config.logName == "" {
 		config.logName = "default"
 	}
