@@ -15,6 +15,9 @@ import (
 	"time"
 )
 
+// see https://learn.microsoft.com/en-us/rest/api/loganalytics/create-request (Data limits)
+const AZURE_DATA_LIMIT = 30000000
+
 // AzureMonitor log writer
 type azureMonitor struct {
 	azWorkspaceID string
@@ -105,13 +108,51 @@ func (am *azureMonitor) WriteLogMessages(logMessages []json.RawMessage, timestam
 		return ErrWriterDisable
 	}
 
-	postData, _ := json.Marshal(logMessages)
+	// check size of logmessages and split them into packages less than the data limit
+	sizeOfLogMessages := 0
+	var logMessagesToSend []json.RawMessage
+	var errorArray []error
+
+	for index, lm := range logMessages {
+
+		if sizeOfLogMessages+len(lm) >= AZURE_DATA_LIMIT {
+			// send the log messages collected so far and reset size and array after that
+			errorArray = append(errorArray, am.doPOSTRequest(logMessagesToSend))
+			sizeOfLogMessages = 0
+			logMessagesToSend = nil
+		}
+
+		sizeOfLogMessages += len(lm)
+		logMessagesToSend = append(logMessagesToSend, lm)
+
+		if index == len(logMessages)-1 {
+			// that was the last message, so send it
+			errorArray = append(errorArray, am.doPOSTRequest(logMessagesToSend))
+		}
+	}
+
+	// concatenate all errors (if any existing) and return in one string
+	if len(errorArray) > 0 {
+		var sb strings.Builder
+
+		for _, item := range errorArray {
+			sb.WriteString(item.Error() + "\n")
+		}
+
+		return fmt.Errorf("%v", sb.String())
+	}
+	return nil
+}
+
+func (am *azureMonitor) doPOSTRequest(payload []json.RawMessage) error {
+	fmt.Println("Sending a POST request to Azure")
+	postData, _ := json.Marshal(payload)
 	postDataLength := len(postData)
 
 	signature, msDate, err := am.azCreateSignatureString(postDataLength)
 	if err != nil {
 		am.azKey = "" // disable azure logging by resetting azKey
-		return fmt.Errorf("Creting signature failed: %v: %w", err, ErrWriterDisable)
+		return fmt.Errorf("Creating signature failed: %v: %w", err, ErrWriterDisable)
 	}
 	authorizationString := "SharedKey " + am.azWorkspaceID + ":" + signature
 
