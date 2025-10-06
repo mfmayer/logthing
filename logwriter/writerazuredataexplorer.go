@@ -13,6 +13,7 @@ import (
 	"github.com/Azure/azure-kusto-go/kusto"
 	"github.com/Azure/azure-kusto-go/kusto/ingest"
 	"github.com/Azure/azure-kusto-go/kusto/kql"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 )
 
 var adeKindNames = [...]string{
@@ -87,6 +88,11 @@ func getKustoClient() (client *kusto.Client, err error) {
 		return
 	}
 	kcs := kusto.NewConnectionStringBuilder(clusterURL)
+	kcs.AttachPolicyClientOptions(&policy.ClientOptions{
+		Retry: policy.RetryOptions{
+			MaxRetries: 8,
+		},
+	})
 	kcs.WithAadAppKey(appID, appKey, authorityID)
 
 	client, err = kusto.New(kcs)
