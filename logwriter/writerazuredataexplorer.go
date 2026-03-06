@@ -60,10 +60,11 @@ func alterMergeTable(kc *kusto.Client, kustoDB string, table string, schema map[
 	return err
 }
 
-// AzureMonitor log writer
+// azureDataExplorer log writer
 type azureDataExplorer struct {
-	client  *kusto.Client
-	logName string
+	client   *kusto.Client
+	logName  string
+	ingestor *ingest.Managed
 }
 
 func getKustoClient() (client *kusto.Client, err error) {
@@ -112,6 +113,7 @@ func (de *azureDataExplorer) Init(config Config) (err error) {
 	if err != nil {
 		return
 	}
+	de.ingestor, err = ingest.NewManaged(de.client, "logs", de.logName)
 	return
 }
 
@@ -123,12 +125,8 @@ func (de *azureDataExplorer) PropertiesSchemaChanged(schema map[string]Kind) err
 }
 
 func (de *azureDataExplorer) WriteLogMessages(logMessages []json.RawMessage, timestamps []time.Time) (err error) {
-	if de.client == nil {
-		return fmt.Errorf("invalid client")
-	}
-	in, err := ingest.NewStreaming(de.client, "logs", de.logName)
-	if err != nil {
-		return err
+	if de.ingestor == nil {
+		return fmt.Errorf("invalid ingestor")
 	}
 	readers := make([]io.Reader, len(logMessages))
 	for i, msg := range logMessages {
@@ -136,12 +134,11 @@ func (de *azureDataExplorer) WriteLogMessages(logMessages []json.RawMessage, tim
 	}
 	reader := io.MultiReader(readers...)
 
-	res, err := in.FromReader(context.Background(), reader, ingest.FileFormat(ingest.MultiJSON))
+	res, err := de.ingestor.FromReader(context.Background(), reader, ingest.FileFormat(ingest.MultiJSON))
 	if err != nil {
 		return err
 	}
-	test := res.Wait(context.Background())
-	resErr := <-test
+	resErr := <-res.Wait(context.Background())
 	if resErr != nil {
 		return resErr
 	}
@@ -150,8 +147,10 @@ func (de *azureDataExplorer) WriteLogMessages(logMessages []json.RawMessage, tim
 }
 
 func (de *azureDataExplorer) Close() {
-	if de.client == nil {
-		return
+	if de.ingestor != nil {
+		de.ingestor.Close()
 	}
-	de.client.Close()
+	if de.client != nil {
+		de.client.Close()
+	}
 }
