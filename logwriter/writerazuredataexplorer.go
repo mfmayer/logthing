@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-kusto-go/kusto"
-	"github.com/Azure/azure-kusto-go/kusto/ingest"
-	"github.com/Azure/azure-kusto-go/kusto/kql"
+	"github.com/Azure/azure-kusto-go/azkustodata"
+	"github.com/Azure/azure-kusto-go/azkustodata/kql"
+	"github.com/Azure/azure-kusto-go/azkustoingest"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 )
 
@@ -27,7 +27,7 @@ var adeKindNames = [...]string{
 	DateTime: "datetime",
 }
 
-func createTable(kc *kusto.Client, kustoDB string, table string) error {
+func createTable(kc *azkustodata.Client, kustoDB string, table string) error {
 	query := kql.New(".create table ").AddTable(table).AddUnsafe(" (timestamp:datetime)") //AddUnsafe(" (TimeGenerated:datetime, ColumnB:int)") //.AddString("(ColumnA:string, ColumnB:int)")
 	_, err := kc.Mgmt(context.Background(), kustoDB, query)
 	if err != nil {
@@ -38,7 +38,7 @@ func createTable(kc *kusto.Client, kustoDB string, table string) error {
 	return err
 }
 
-func alterMergeTable(kc *kusto.Client, kustoDB string, table string, schema map[string]Kind) error {
+func alterMergeTable(kc *azkustodata.Client, kustoDB string, table string, schema map[string]Kind) error {
 	var b strings.Builder
 	first := true
 	for column, columnKind := range schema {
@@ -62,11 +62,12 @@ func alterMergeTable(kc *kusto.Client, kustoDB string, table string, schema map[
 
 // AzureMonitor log writer
 type azureDataExplorer struct {
-	client  *kusto.Client
-	logName string
+	client       *azkustodata.Client
+	ingestClient *azkustoingest.Streaming
+	logName      string
 }
 
-func getKustoClient() (client *kusto.Client, err error) {
+func getKustoClient() (client *azkustodata.Client, kcs *azkustodata.ConnectionStringBuilder, err error) {
 	clusterURL := os.Getenv("LOGTHING_DATA_EXPLORER_CLUSTER_URL")
 	if clusterURL == "" {
 		err = fmt.Errorf("missing LOGTHING_DATA_EXPLORER_CLUSTER_URL")
@@ -87,7 +88,7 @@ func getKustoClient() (client *kusto.Client, err error) {
 		err = fmt.Errorf("missing LOGTHING_DATA_EXPLORER_AUTHORITY_ID")
 		return
 	}
-	kcs := kusto.NewConnectionStringBuilder(clusterURL)
+	kcs = azkustodata.NewConnectionStringBuilder(clusterURL)
 	kcs.AttachPolicyClientOptions(&policy.ClientOptions{
 		Retry: policy.RetryOptions{
 			MaxRetries: 8,
@@ -95,7 +96,7 @@ func getKustoClient() (client *kusto.Client, err error) {
 	})
 	kcs.WithAadAppKey(appID, appKey, authorityID)
 
-	client, err = kusto.New(kcs)
+	client, err = azkustodata.New(kcs)
 	if err != nil {
 		err = fmt.Errorf("cannot create Kusto client: %w", err)
 	}
@@ -108,9 +109,14 @@ func NewAzureDataExplorerWriter() LogWriter {
 
 func (de *azureDataExplorer) Init(config Config) (err error) {
 	de.logName = config.LogName
-	de.client, err = getKustoClient()
+	var kcs *azkustodata.ConnectionStringBuilder
+	de.client, kcs, err = getKustoClient()
 	if err != nil {
 		return
+	}
+	de.ingestClient, err = azkustoingest.NewStreaming(kcs)
+	if err != nil {
+		return fmt.Errorf("cannot create Kusto streaming ingest client: %w", err)
 	}
 	return
 }
@@ -123,12 +129,8 @@ func (de *azureDataExplorer) PropertiesSchemaChanged(schema map[string]Kind) err
 }
 
 func (de *azureDataExplorer) WriteLogMessages(logMessages []json.RawMessage, timestamps []time.Time) (err error) {
-	if de.client == nil {
+	if de.client == nil || de.ingestClient == nil {
 		return fmt.Errorf("invalid client")
-	}
-	in, err := ingest.NewStreaming(de.client, "logs", de.logName)
-	if err != nil {
-		return err
 	}
 	readers := make([]io.Reader, len(logMessages))
 	for i, msg := range logMessages {
@@ -136,7 +138,13 @@ func (de *azureDataExplorer) WriteLogMessages(logMessages []json.RawMessage, tim
 	}
 	reader := io.MultiReader(readers...)
 
-	res, err := in.FromReader(context.Background(), reader, ingest.FileFormat(ingest.MultiJSON))
+	res, err := de.ingestClient.FromReader(
+		context.Background(),
+		reader,
+		azkustoingest.Database("logs"),
+		azkustoingest.Table(de.logName),
+		azkustoingest.FileFormat(azkustoingest.MultiJSON),
+	)
 	if err != nil {
 		return err
 	}
