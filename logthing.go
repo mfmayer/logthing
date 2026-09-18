@@ -172,18 +172,17 @@ func WithSetStaticProperties(staticProperties map[string]interface{}) func(*disp
 // InitDispatcher to init logthing log message dispatcher with given writers.
 // When logthing isn't needed anymore (e.g. when the application exits) Close() must be called.
 func InitDispatcher(logWriters []logwriter.LogWriter, opts ...func(*dispatcherOptions)) (err error) {
-	if ld != nil {
-		ld.close()
-	}
+	Close()
 	ld, err = newLogDispatcher(logWriters, opts...)
 	return
 }
 
-// Close to flush all queued messages and close the writers
+// Close flushes all queued messages and closes the writers.
+// Calling Close again without reinitializing the dispatcher has no effect.
 func Close() {
-	if ld != nil {
-		ld.close()
-	}
+	dispatcher := ld
+	ld = nil
+	dispatcher.close()
 }
 
 // Log outputs and sends LogMessage with default dispatcher

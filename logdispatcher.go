@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -40,6 +41,7 @@ type logDispatcher struct {
 	done              chan bool
 	overflowCounter   uint64
 	logEntryIDCounter uint64
+	closeOnce         sync.Once
 }
 
 // NewLogDispatcher returns a new LogDispatcher
@@ -76,6 +78,7 @@ func newLogDispatcher(logWriters []logwriter.LogWriter, opts ...func(*dispatcher
 
 	go func(ld *logDispatcher) {
 		ticker := time.NewTicker(options.dispatchInterval)
+		defer ticker.Stop()
 		var logMessages []*logMsg
 		for {
 			select {
@@ -98,20 +101,22 @@ func newLogDispatcher(logWriters []logwriter.LogWriter, opts ...func(*dispatcher
 	return
 }
 
-// close flushes all logMessages, closes all writers and ends the dispatcher
+// close flushes all logMessages, closes all writers and ends the dispatcher once.
 func (ld *logDispatcher) close() {
 	if ld == nil {
 		return
 	}
-	close(ld.logMessageCh)
-	<-ld.done // wait until dispatcher finished writing all logMessages
+	ld.closeOnce.Do(func() {
+		close(ld.logMessageCh)
+		<-ld.done // wait until dispatcher finished writing all logMessages
 
-	// Close the writers
-	for _, lw := range ld.logWriters {
-		if lw != nil {
-			lw.Close()
+		// Close the writers
+		for _, lw := range ld.logWriters {
+			if lw != nil {
+				lw.Close()
+			}
 		}
-	}
+	})
 }
 
 // writeLogMessages pre-marshals the log message and forwards it to all registered writers
