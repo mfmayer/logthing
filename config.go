@@ -96,6 +96,15 @@ func ConfigWhiteListLogTypes() []string {
 	return types
 }
 
+// ConfigWhitelistProperties returns list of whitelisted properties (LOGTHING_WHITELIST_PROPERTIES). An empty list means that all properties are logged.
+func ConfigWhitelistProperties() []string {
+	properties := []string{}
+	for k := range config.whitelistProperties {
+		properties = append(properties, k)
+	}
+	return properties
+}
+
 // ConfigPrintOutputProperties returns list of properties that are added to stdout/stderr output of log messages (LOGTHING_PRINT_PROPERTIES)
 func ConfigPrintOutputProperties() []string {
 	types := []string{}

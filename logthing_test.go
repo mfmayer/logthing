@@ -19,6 +19,7 @@ func TestLogthing(t *testing.T) {
 	fmt.Printf("ConfigLogName                     : %v\n", logthing.ConfigLogName())
 	fmt.Printf("ConfigLogMaxSeverity              : %v\n", logthing.ConfigLogMaxSeverity())
 	fmt.Printf("ConfigWhiteListLogTypes           : %v\n", logthing.ConfigWhiteListLogTypes())
+	fmt.Printf("ConfigWhitelistProperties         : %v\n", logthing.ConfigWhitelistProperties())
 	fmt.Printf("print ConfigPrintOutputProperties : %v\n", logthing.ConfigPrintOutputProperties())
 
 	logMsg := logthing.NewLogMsg("<some_type>")
