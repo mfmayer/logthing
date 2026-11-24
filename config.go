@@ -18,7 +18,6 @@ type configStruct struct {
 }
 
 var config configStruct = configStruct{
-	logName:               os.Getenv("LOGTHING_LOG_NAME"),
 	logMaxSeverity:        SeverityTrace,
 	whitelistLogTypes:     map[string]struct{}{},
 	whitelistProperties:   map[string]struct{}{},
@@ -58,6 +57,7 @@ func (c configStruct) isWhitelisted(logType string) bool {
 func initConfig() {
 	godotenv.Load()
 
+	config.logName = os.Getenv("LOGTHING_LOG_NAME")
 	if config.logName == "" {
 		config.logName = "default"
 	}

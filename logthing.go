@@ -10,6 +10,7 @@
 // LOGTHING_LOG_MAX_SEVERITY     - Messages with severity > LOGTHING_LOG_MAX_SEVERITY won't be logged or printed at all and are immediately dropped
 // LOGTHING_PRINT_MAX_SEVERITY   - Messages with severity <= LOGTHING_PRINT_MAX_SEVERITY are are also printed to stdout / stderr
 // LOGTHING_WHITELIST_LOG_TYPES  - Messages that match any whitelisted log type (comma separated) are logged independently of their severity
+// LOGTHING_WHITELIST_PROPERTIES - If not empty, only whitelisted properties (comma separated) are logged, also for whitelisted log types (type, timestamp, severity and output are always kept)
 // LOGTHING_PRINT_PROPERTIES     - Message properties that match any give print property (comma separated) are printed with the message output
 //
 // Note: Severity increases with lower values (SeverityEmergency: 0 ... SeverityTrace: 7)
